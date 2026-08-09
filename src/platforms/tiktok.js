@@ -167,7 +167,7 @@ async function pollStatus(tok, publishId) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-module.exports = definePlatform({
+const tiktok = definePlatform({
   id: 'tiktok',
   label: 'TikTok',
   available: Boolean(config.tiktok.clientKey && config.tiktok.clientSecret),
@@ -222,3 +222,8 @@ module.exports = definePlatform({
     throw err;
   },
 });
+
+module.exports = tiktok;
+module.exports.fetchCreatorInfo = fetchCreatorInfo;
+module.exports.chunkPlan = chunkPlan;
+module.exports.uploadChunks = uploadChunks;

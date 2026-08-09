@@ -23,6 +23,9 @@ async function refreshAccountIfNeeded(account, adapter, force) {
       throw new Error(`Token for ${adapter.label} has expired. Re-connect the account.`);
     }
     const refreshed = await adapter.refresh(account);
+    if (!refreshed) {
+      throw new Error(`Token for ${adapter.label} cannot be refreshed. Re-connect the account.`);
+    }
     db.prepare('UPDATE accounts SET token = ? WHERE id = ?').run(
       JSON.stringify(refreshed),
       account.id
