@@ -1,0 +1,74 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<% const chip = (status) => {
+  const map = {
+    published: 'bg-emerald-900 text-emerald-300',
+    scheduled: 'bg-blue-900 text-blue-300',
+    publishing: 'bg-yellow-900 text-yellow-300',
+    failed: 'bg-red-900 text-red-300',
+  };
+  return map[status] || 'bg-slate-800 text-slate-400';
+}; %>
+
+<% if (msg) { %>
+  <div class="mb-4 p-3 rounded-xl <%= msg.ok ? 'bg-emerald-950 border border-emerald-800 text-emerald-300' : 'bg-red-950 border border-red-800 text-red-300' %>">
+    <%= msg.text %>
+  </div>
+<% } %>
+
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">Posts</h1>
+  <a href="/compose" class="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-sm text-white transition-colors">New post</a>
+</div>
+
+<% if (posts.length === 0) { %>
+  <p class="text-sm text-slate-500 bg-slate-900 border border-slate-800 rounded-xl p-4">No posts yet.</p>
+<% } else { %>
+  <ul class="space-y-4">
+    <% for (const p of posts) { %>
+      <li class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="min-w-0 flex-1">
+            <p class="text-sm text-slate-300 whitespace-pre-wrap"><%= p.text %></p>
+            <% if (p.mediaUrl) { %>
+              <div class="mt-3">
+                <% if (p.media_type === 'video') { %>
+                  <video src="<%= p.mediaUrl %>" controls class="max-h-48 rounded-lg"></video>
+                <% } else { %>
+                  <img src="<%= p.mediaUrl %>" alt="" class="max-h-48 rounded-lg">
+                <% } %>
+              </div>
+            <% } %>
+          </div>
+          <div class="text-xs text-slate-500 shrink-0">
+            Created <%= p.created_at.slice(0, 16) %> UTC
+          </div>
+        </div>
+        <% const targets = targetsByPost.get(p.id) || []; %>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <% for (const t of targets) { %>
+            <span class="inline-flex items-center gap-2 text-xs px-2.5 py-1 rounded-full bg-slate-800">
+              <span class="capitalize"><%= t.account_platform %></span>
+              <span class="text-slate-500">→</span>
+              <span class="text-slate-400"><%= t.account_name %></span>
+              <span class="px-1.5 py-0.5 rounded-full <%= chip(t.status) %>"><%= t.status %></span>
+              <% if (t.status === 'failed') { %>
+                <form method="post" action="/targets/<%= t.id %>/retry" class="inline">
+                  <button class="text-violet-300 hover:text-violet-200 underline">retry</button>
+                </form>
+              <% } %>
+            </span>
+          <% } %>
+        </div>
+        <% if (targets.some(t => t.error)) { %>
+          <p class="mt-2 text-xs text-red-400">
+            <%= targets.filter(t => t.error).map(t => `${t.account_platform}: ${t.error}`).join(' · ') %>
+          </p>
+        <% } %>
+      </li>
+    <% } %>
+  </ul>
+<% } %>
+
+<%- include('../partials/foot') %>

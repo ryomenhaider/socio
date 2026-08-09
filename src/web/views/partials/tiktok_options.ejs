@@ -1,0 +1,78 @@
+<% if (ok) { %>
+<div x-data="{ disclosure: 'none', consent: false, privacy: '' }" class="mt-4 space-y-4 rounded-xl bg-slate-800/50 border border-slate-700 p-4">
+  <p class="text-xs text-slate-400">These settings follow TikTok's Content Posting API requirements.</p>
+
+  <div class="grid sm:grid-cols-2 gap-4">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Privacy <span class="text-red-400">*</span></label>
+      <select name="tiktok_privacy_level" x-model="privacy"
+        class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+        <option value="">Select…</option>
+        <% for (const p of info.privacy_level_options || []) { %>
+          <option value="<%= p %>"><%= p.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) %></option>
+        <% } %>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Title</label>
+      <input name="tiktok_title" type="text" maxlength="2200" placeholder="Optional caption title"
+        class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm">
+    </div>
+  </div>
+
+  <div class="flex flex-wrap gap-5 text-sm">
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input type="checkbox" name="tiktok_disable_comment" value="1" <%= info.comment_disabled ? 'checked disabled' : '' %> class="accent-violet-500">
+      Disable comments
+    </label>
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input type="checkbox" name="tiktok_disable_duet" value="1" <%= info.duet_disabled ? 'checked disabled' : '' %> class="accent-violet-500">
+      Disable duets
+    </label>
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input type="checkbox" name="tiktok_disable_stitch" value="1" <%= info.stitch_disabled ? 'checked disabled' : '' %> class="accent-violet-500">
+      Disable stitches
+    </label>
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input type="checkbox" name="tiktok_is_aigc" value="1" class="accent-violet-500">
+      AI-generated content
+    </label>
+  </div>
+
+  <div class="border-t border-slate-700 pt-4">
+    <p class="text-xs text-slate-500 mb-2">Does this content promote yourself, a brand, a product or a service?</p>
+    <label class="flex items-center gap-3 cursor-pointer text-sm">
+      <input type="checkbox" name="tiktok_disclosure" value="your_brand" x-model="disclosure" true-value="your_brand" false-value="none" class="accent-violet-500">
+      Yes — it's promotional
+    </label>
+    <div x-show="disclosure !== 'none'" x-cloak class="mt-2 pl-6 space-y-2">
+      <label class="flex items-center gap-2 text-sm cursor-pointer">
+        <input type="radio" name="tiktok_disclosure" value="your_brand" x-model="disclosure" class="accent-violet-500">
+        Your own brand (organic)
+      </label>
+      <label class="flex items-center gap-2 text-sm cursor-pointer">
+        <input type="radio" name="tiktok_disclosure" value="branded" x-model="disclosure" class="accent-violet-500">
+        Branded content (a third party / paid partnership)
+      </label>
+      <p x-show="disclosure === 'branded' && privacy === 'SELF_ONLY'" x-cloak class="text-xs text-amber-400">
+        Branded content cannot be posted as private — choose another privacy level.
+      </p>
+    </div>
+  </div>
+
+  <div class="border-t border-slate-700 pt-4">
+    <label class="flex items-start gap-3 cursor-pointer text-sm">
+      <input type="checkbox" name="tiktok_consent" value="1" x-model="consent" class="accent-violet-500 mt-0.5">
+      <span x-text="disclosure === 'branded'
+        ? 'By posting, you agree to the TikTok Branded Content Policy and Music Usage Confirmation.'
+        : 'By posting, you agree to the TikTok Music Usage Confirmation.'"></span>
+    </label>
+  </div>
+
+  <p class="text-xs text-slate-500">After publishing it can take a few minutes for the video to appear on your profile.</p>
+</div>
+<% } else { %>
+<div class="mt-4 p-3 rounded-xl bg-red-950 border border-red-800 text-sm text-red-300">
+  <%= error %>
+</div>
+<% } %>

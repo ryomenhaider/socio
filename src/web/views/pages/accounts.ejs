@@ -1,0 +1,96 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<% const MSG = {
+  connected: { ok: true, text: 'Account(s) connected.' },
+  updated: { ok: true, text: 'Existing account tokens refreshed.' },
+  disconnected: { ok: true, text: 'Account disconnected.' },
+  refreshed: { ok: true, text: 'Token refreshed.' },
+  denied: { ok: false, text: 'Authorization was cancelled or denied.' },
+  error: { ok: false, text: 'Something went wrong during authorization. Check server logs.' },
+  bad_state: { ok: false, text: 'Invalid OAuth state. Try again.' },
+  not_available: { ok: false, text: 'That platform is not available yet.' }
+}; %>
+<% if (msg && MSG[msg]) { %>
+  <div class="mb-4 p-3 rounded-xl <%= MSG[msg].ok ? 'bg-emerald-950 border border-emerald-800 text-emerald-300' : 'bg-red-950 border border-red-800 text-red-300' %>">
+    <%= MSG[msg].text %>
+  </div>
+<% } %>
+
+<h1 class="text-2xl font-bold mb-6">Connected accounts</h1>
+
+<div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4 mb-10">
+  <% for (const p of Object.values(platforms)) { %>
+    <div class="rounded-xl bg-slate-900 border border-slate-800 p-5">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold capitalize"><%= p.label %></h2>
+        <% if (p.available) { %>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-900 text-emerald-300">ready</span>
+        <% } else { %>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-500">soon</span>
+        <% } %>
+      </div>
+      <% if (p.available) { %>
+        <% if (p.id === 'facebook' || p.id === 'instagram') { %>
+          <p class="text-xs text-slate-500 leading-relaxed mt-1">
+            Imported when you <a href="/auth/meta" class="text-violet-400 underline">connect Meta</a>.
+          </p>
+        <% } else { %>
+          <a href="/auth/<%= p.id %>"
+            class="inline-block mt-1 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-sm text-white transition-colors">
+            Connect <%= p.label %>
+          </a>
+        <% } %>
+        <% if (p.connectNote) { %>
+          <p class="text-xs text-slate-500 leading-relaxed mt-2"><%= p.connectNote %></p>
+        <% } %>
+      <% } else { %>
+        <p class="text-xs text-slate-500 leading-relaxed"><%= p.connectNote %></p>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+
+<h2 class="text-lg font-semibold mb-3">Your accounts</h2>
+<% if (accounts.length === 0) { %>
+  <p class="text-sm text-slate-500 bg-slate-900 border border-slate-800 rounded-xl p-4">No accounts connected yet.</p>
+<% } else { %>
+  <ul class="space-y-3">
+    <% for (const a of accounts) { %>
+      <li class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p class="font-medium capitalize"><%= a.platform %> · <%= a.display_name %></p>
+            <p class="text-xs text-slate-500">Connected <%= a.created_at.slice(0, 16) %> UTC</p>
+            <% if (a.expires_at) { %>
+              <p class="text-xs <%= a.expires_at < Date.now() ? 'text-red-400' : 'text-slate-500' %>">
+                Token expires <%= new Date(a.expires_at).toISOString().slice(0, 16) %> UTC
+                <% if (a.expires_at < Date.now() && a.has_refresh) { %>— use "Refresh token"<% } %>
+                <% if (a.expires_at < Date.now() && !a.has_refresh) { %>— re-connect the account<% } %>
+              </p>
+            <% } %>
+            <% if (a.last_error) { %>
+              <p class="text-xs text-red-400 mt-1"><%= a.last_error %></p>
+            <% } %>
+          </div>
+          <div class="flex gap-2">
+            <% if (a.has_refresh) { %>
+              <form method="post" action="/accounts/<%= a.id %>/refresh">
+                <button class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700">Refresh token</button>
+              </form>
+            <% } %>
+            <% if (a.platform === 'tiktok') { %>
+              <a href="/auth/tiktok" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 inline-block">Re-connect</a>
+            <% } %>
+            <form method="post" action="/accounts/<%= a.id %>/disconnect"
+              onsubmit="return confirm('Disconnect this account? Scheduled posts to it will be removed.')">
+              <button class="text-xs px-3 py-1.5 rounded-lg bg-red-950 hover:bg-red-900 text-red-300">Disconnect</button>
+            </form>
+          </div>
+        </div>
+      </li>
+    <% } %>
+  </ul>
+<% } %>
+
+<%- include('../partials/foot') %>

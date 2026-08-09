@@ -1,0 +1,162 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<h1 class="text-2xl font-bold mb-6">Compose post</h1>
+
+<% const MSG = {
+  no_platform: 'Select at least one platform to post to.',
+  empty: 'Write some text or use the AI caption generator.',
+  error: 'Something went wrong. Try again.',
+  no_consent: 'TikTok requires your consent to post — check the music usage confirmation box.',
+  no_privacy: 'TikTok requires a privacy level — pick one from the dropdown.'
+}; %>
+<% if (msg) { %>
+  <div class="mb-4 p-3 rounded-xl <%= MSG[msg] ? 'bg-red-950 border border-red-800 text-red-300' : '' %>">
+    <%= MSG[msg] || '' %>
+  </div>
+<% } %>
+
+<form action="/compose" method="post" enctype="multipart/form-data" x-data="{ mode: 'now' }" class="max-w-3xl space-y-6">
+  <div>
+    <label for="post-text" class="block text-sm font-medium mb-2">Post text</label>
+    <textarea id="post-text" name="text" rows="6" maxlength="3000"
+      placeholder="What's the update?"
+      class="w-full rounded-xl bg-slate-900 border border-slate-700 px-4 py-3 focus:border-violet-500 focus:outline-none"></textarea>
+    <p class="text-xs text-slate-600 mt-1">Max 3000 characters (LinkedIn limit).</p>
+  </div>
+
+  <div>
+    <label for="media" class="block text-sm font-medium mb-2">Media <span class="text-slate-600">(optional)</span></label>
+    <input type="file" id="media" name="media" accept="image/*,video/*"
+      class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700">
+    <p class="text-xs text-slate-600 mt-1">One image or video up to 300 MB.</p>
+  </div>
+
+  <div class="rounded-xl bg-slate-900 border border-slate-800 p-4">
+    <h2 class="font-semibold mb-3 flex items-center gap-2">
+      <span class="text-violet-400">✦</span> AI caption generator
+      <% if (!aiConfigured) { %>
+        <span class="text-xs text-amber-400 font-normal">(add an OpenRouter key in Settings)</span>
+      <% } %>
+    </h2>
+    <div class="grid sm:grid-cols-3 gap-3">
+      <div class="sm:col-span-2">
+        <label for="ai-topic" class="block text-xs text-slate-500 mb-1">Topic or keywords</label>
+        <input id="ai-topic" name="topic" type="text" placeholder="e.g. launch of our new analytics dashboard"
+          class="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none">
+      </div>
+      <div>
+        <label for="ai-tone" class="block text-xs text-slate-500 mb-1">Tone</label>
+        <select id="ai-tone" name="tone" class="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-sm">
+          <option value="professional">Professional</option>
+          <option value="casual">Casual</option>
+          <option value="funny">Funny</option>
+          <option value="enthusiastic">Enthusiastic</option>
+          <option value="empathetic">Empathetic</option>
+        </select>
+      </div>
+      <div>
+        <label for="ai-length" class="block text-xs text-slate-500 mb-1">Length</label>
+        <select id="ai-length" name="length" class="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-sm">
+          <option value="medium">Medium</option>
+          <option value="short">Short</option>
+          <option value="long">Long</option>
+        </select>
+      </div>
+    </div>
+    <button type="button" hx-post="/api/caption" hx-include="#ai-topic,#ai-tone,#ai-length" hx-target="#caption-result" hx-swap="innerHTML"
+      class="mt-3 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm transition-colors"
+      <%= aiConfigured ? '' : 'disabled' %>>
+      Generate caption
+    </button>
+    <div id="caption-result"></div>
+  </div>
+
+  <div>
+    <h2 class="font-semibold mb-3">Post to</h2>
+    <% if (accounts.length === 0) { %>
+      <p class="text-sm text-slate-500 bg-slate-900 border border-slate-800 rounded-xl p-4">
+        No connected accounts. <a href="/accounts" class="text-violet-400 underline">Connect one first</a>.
+      </p>
+    <% } else { %>
+      <div class="grid sm:grid-cols-2 gap-3">
+        <% for (const a of accounts) { %>
+          <label class="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 cursor-pointer hover:border-violet-700 transition-colors">
+            <input type="checkbox" name="platforms" value="<%= a.id %>" class="w-4 h-4 accent-violet-500"
+              <% if (a.platform === 'tiktok') { %>
+                hx-get="/api/tiktok/options?account_id=<%= a.id %>" hx-trigger="change" hx-target="#tiktok-panel" hx-swap="innerHTML"
+              <% } %>
+            >
+            <span class="capitalize font-medium text-sm w-24"><%= a.platform %></span>
+            <span class="text-sm text-slate-400 truncate"><%= a.display_name %></span>
+          </label>
+        <% } %>
+      </div>
+      <p class="text-xs text-slate-600 mt-2">
+        Notes: Instagram needs a business account and requires media. YouTube and TikTok need a video file.
+        TikTok videos can take a few minutes to appear after posting.
+      </p>
+    <% } %>
+  </div>
+
+  <div id="tiktok-panel"></div>
+
+  <div id="youtube-settings" class="hidden">
+    <h2 class="font-semibold mb-3">YouTube settings</h2>
+    <div class="grid sm:grid-cols-2 gap-4 rounded-xl bg-slate-800/50 border border-slate-700 p-4">
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Video title</label>
+        <input name="youtube_title" type="text" maxlength="100" placeholder="Leave empty to use the post text"
+          class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Visibility</label>
+        <select name="youtube_privacy" class="w-full rounded-lg bg-slate-900 border border-slate-700 px-3 py-2 text-sm">
+          <option value="public">Public</option>
+          <option value="unlisted">Unlisted</option>
+          <option value="private">Private</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-xl bg-slate-900 border border-slate-800 p-4">
+    <h2 class="font-semibold mb-3">When</h2>
+    <div class="flex flex-wrap gap-6">
+      <label class="flex items-center gap-2 text-sm cursor-pointer">
+        <input type="radio" name="publish_mode" value="now" x-model="mode" class="accent-violet-500">
+        Publish now
+      </label>
+      <label class="flex items-center gap-2 text-sm cursor-pointer">
+        <input type="radio" name="publish_mode" value="schedule" x-model="mode" class="accent-violet-500">
+        Schedule
+      </label>
+      <div x-show="mode === 'schedule'" x-cloak class="w-full">
+        <input type="datetime-local" id="scheduled-at" onchange="document.getElementById('scheduled-at-iso').value = new Date(this.value).toISOString()"
+          class="rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-sm">
+        <input type="hidden" name="scheduled_at" id="scheduled-at-iso">
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" <%= accounts.length === 0 ? 'disabled' : '' %>
+    class="px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 font-semibold transition-colors <%= accounts.length === 0 ? 'opacity-50 cursor-not-allowed' : '' %>">
+    Post it
+  </button>
+</form>
+
+<script>
+  const youtubeAccountId = '<%= (accounts.find(a => a.platform === "youtube") || {}).id || "" %>';
+  if (youtubeAccountId) {
+    const settings = document.getElementById('youtube-settings');
+    document.querySelectorAll('input[name="platforms"]').forEach((box) => {
+      if (box.value === youtubeAccountId) {
+        box.addEventListener('change', (e) => settings.classList.toggle('hidden', !e.target.checked));
+      }
+    });
+  }
+</script>
+
+<style>[x-cloak] { display: none !important; }</style>
+
+<%- include('../partials/foot') %>

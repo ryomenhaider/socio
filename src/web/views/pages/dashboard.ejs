@@ -1,0 +1,95 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<h1 class="text-2xl font-bold mb-6">Dashboard</h1>
+
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+  <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+    <p class="text-xs uppercase tracking-wider text-slate-500">Drafts</p>
+    <p class="text-3xl font-bold mt-1"><%= stats.drafts %></p>
+  </div>
+  <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+    <p class="text-xs uppercase tracking-wider text-slate-500">Scheduled</p>
+    <p class="text-3xl font-bold mt-1 text-blue-400"><%= stats.scheduled %></p>
+  </div>
+  <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+    <p class="text-xs uppercase tracking-wider text-slate-500">Published</p>
+    <p class="text-3xl font-bold mt-1 text-emerald-400"><%= stats.published %></p>
+  </div>
+  <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+    <p class="text-xs uppercase tracking-wider text-slate-500">Failed</p>
+    <p class="text-3xl font-bold mt-1 text-red-400"><%= stats.failed %></p>
+  </div>
+</div>
+
+<div class="grid md:grid-cols-2 gap-6">
+  <section>
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-lg font-semibold">Connected accounts</h2>
+      <a href="/accounts" class="text-sm text-violet-400 hover:text-violet-300">Manage</a>
+    </div>
+    <% if (accounts.length === 0) { %>
+      <p class="text-sm text-slate-500 bg-slate-900 border border-slate-800 rounded-xl p-4">
+        No accounts connected yet. <a href="/accounts" class="text-violet-400 underline">Connect LinkedIn</a> to start posting.
+      </p>
+    <% } else { %>
+      <ul class="space-y-2">
+        <% for (const a of accounts) { %>
+          <li class="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-4 py-3">
+            <div>
+              <p class="font-medium capitalize"><%= a.platform %></p>
+              <p class="text-sm text-slate-500"><%= a.display_name %></p>
+            </div>
+            <span class="text-xs px-2 py-1 rounded-full <%= a.status === 'connected' ? 'bg-emerald-900 text-emerald-300' : 'bg-red-900 text-red-300' %>">
+              <%= a.status %>
+            </span>
+          </li>
+        <% } %>
+      </ul>
+    <% } %>
+  </section>
+
+  <section>
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-lg font-semibold">Upcoming</h2>
+      <a href="/posts" class="text-sm text-violet-400 hover:text-violet-300">All posts</a>
+    </div>
+    <% if (upcoming.length === 0) { %>
+      <p class="text-sm text-slate-500 bg-slate-900 border border-slate-800 rounded-xl p-4">Nothing scheduled.</p>
+    <% } else { %>
+      <ul class="space-y-2">
+        <% for (const t of upcoming) { %>
+          <li class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium capitalize"><%= t.account_platform %> → <%= t.account_name %></p>
+              <p class="text-xs text-slate-500">Post #<%= t.post_id %></p>
+            </div>
+            <span class="text-xs text-slate-400"><%= t.scheduled_at.replace('T', ' ').slice(0, 16) %> UTC</span>
+          </li>
+        <% } %>
+      </ul>
+    <% } %>
+  </section>
+</div>
+
+<section class="mt-8">
+  <h2 class="text-lg font-semibold mb-3">Recent posts</h2>
+  <% if (recent.length === 0) { %>
+    <p class="text-sm text-slate-500 bg-slate-900 border border-slate-800 rounded-xl p-4">
+      No posts yet. <a href="/compose" class="text-violet-400 underline">Write your first post</a>.
+    </p>
+  <% } else { %>
+    <ul class="space-y-2">
+      <% for (const p of recent) { %>
+        <li class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex items-center justify-between">
+          <p class="text-sm text-slate-300 truncate max-w-md"><%= p.text.length > 120 ? p.text.slice(0, 120) + '…' : p.text %></p>
+          <span class="text-xs text-slate-500 shrink-0 ml-4">
+            <%= p.target_count %> target<%= p.target_count === 1 ? '' : 's' %> · <%= p.created_at.slice(0, 16) %> UTC
+          </span>
+        </li>
+      <% } %>
+    </ul>
+  <% } %>
+</section>
+
+<%- include('../partials/foot') %>

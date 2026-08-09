@@ -1,0 +1,23 @@
+<header class="border-b border-slate-800 bg-slate-900/70 backdrop-blur">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
+    <a href="/" class="font-bold text-lg tracking-tight">
+      <span class="text-violet-400">socio</span><span class="text-slate-500">.dev</span>
+    </a>
+    <nav class="flex gap-1 text-sm">
+      <% const items = [
+        { href: '/', label: 'Dashboard', key: 'dashboard' },
+        { href: '/compose', label: 'Compose', key: 'compose' },
+        { href: '/posts', label: 'Posts', key: 'posts' },
+        { href: '/accounts', label: 'Accounts', key: 'accounts' },
+        { href: '/settings', label: 'Settings', key: 'settings' },
+      ]; %>
+      <% for (const it of items) { %>
+        <a href="<%= it.href %>"
+           class="px-3 py-1.5 rounded-md transition-colors <%= active === it.key ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800' %>">
+          <%= it.label %>
+        </a>
+      <% } %>
+    </nav>
+  </div>
+</header>
+<main class="flex-1 max-w-6xl mx-auto px-4 py-6 w-full">

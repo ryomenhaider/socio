@@ -1,0 +1,21 @@
+{
+  "name": "socio",
+  "version": "0.1.0",
+  "description": "Lightweight social media scheduler: LinkedIn/Facebook/Instagram/YouTube/TikTok, SQLite, OpenRouter AI captions",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "multer": "^2.2.0"
+  }
+}
