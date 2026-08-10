@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
 # Install socio on an Oracle Cloud free instance (Ubuntu 22.04/24.04).
 #
-# usage:  bash deploy/install.sh /home/ubuntu/socio your.domain.com
+# usage:  bash deploy/install.sh /home/ubuntu/socio
 #
-# If your instance has no domain yet, run without the domain argument:
-#   bash deploy/install.sh /home/ubuntu/socio
-# and add nginx/certbot later. NOTE: TikTok requires HTTPS; Meta/LinkedIn
-# require HTTPS for production redirect URIs too.
+# Domain defaults to vektorlabs.xyz (override with a second arg). This sets up
+# Node 22, npm dependencies, .env (BASE_URL=https://<domain>), nginx, a Let's
+# Encrypt certificate via certbot, and a systemd service so socio runs forever.
 
 set -euo pipefail
 
 APP_DIR="${1:?usage: bash deploy/install.sh /home/ubuntu/socio [domain] [app-user]}"
-DOMAIN="${2:-socio.vektorlabs.xyz}"
+DOMAIN="${2:-vektorlabs.xyz}"
 APP_USER="${3:-ubuntu}"
 
-if [[ "${DOMAIN}" == "socio.vektorlabs.xyz" ]]; then
+if [[ "${DOMAIN}" == "vektorlabs.xyz" ]]; then
   echo "==> Using default domain: https://${DOMAIN}"
-  echo "    Point an A record: ${DOMAIN} -> your instance public IP"
+  echo "    (A record ${DOMAIN} must point to this instance, e.g. 141.148.15.111)"
 fi
 
 echo "==> Installing system packages (nodejs, nginx, certbot)"

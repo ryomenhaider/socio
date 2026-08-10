@@ -87,9 +87,9 @@ The model is configurable in `/settings` (default `openai/gpt-4o-mini`; free mod
 
 ## Deploying on a 1 GB VPS (Oracle Cloud free instance)
 
-Domain: `socio.vektorlabs.xyz` (A record → instance public IP).
+Domain: `vektorlabs.xyz` (A record → `141.148.15.111`).
 
-1. **DNS:** add an A record `socio.vektorlabs.xyz` → your instance IP.
+1. **DNS:** A record `vektorlabs.xyz` → `141.148.15.111` (already set at Namecheap).
 2. **OCI console:** VCN → subnet Security List → add ingress rules for TCP 80 and TCP 443.
 3. **Instance OS firewall** (Oracle Ubuntu images use iptables):
    ```bash
@@ -97,9 +97,9 @@ Domain: `socio.vektorlabs.xyz` (A record → instance public IP).
    sudo iptables -I INPUT -p tcp --dport 443 -j ACCEPT
    sudo netfilter-persistent save
    ```
-4. **Deploy** (installs Node 22, nginx, certbot; sets up the systemd service + TLS):
+4. **Deploy** (installs Node 22, nginx, certbot; sets up the systemd service + TLS for vektorlabs.xyz):
    ```bash
-   cd socio
+   git clone git@github.com:ryomenhaider/socio.git && cd socio
    bash deploy/install.sh /home/ubuntu/socio
    ```
 5. **Configure:**
@@ -108,10 +108,10 @@ Domain: `socio.vektorlabs.xyz` (A record → instance public IP).
    sudo systemctl restart socio
    ```
 6. **OAuth redirect URIs** (add in each developer console):
-   - LinkedIn: `https://socio.vektorlabs.xyz/auth/linkedin/callback`
-   - Meta: `https://socio.vektorlabs.xyz/auth/meta/callback`
-   - Google: `https://socio.vektorlabs.xyz/auth/youtube/callback`
-   - TikTok: `https://socio.vektorlabs.xyz/auth/tiktok/callback`
+   - LinkedIn: `https://vektorlabs.xyz/auth/linkedin/callback`
+   - Meta: `https://vektorlabs.xyz/auth/meta/callback`
+   - Google: `https://vektorlabs.xyz/auth/youtube/callback`
+   - TikTok: `https://vektorlabs.xyz/auth/tiktok/callback`
 
 Ops:
 ```bash
