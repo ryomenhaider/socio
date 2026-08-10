@@ -1,0 +1,18 @@
+[Unit]
+Description=socio - lightweight social media scheduler
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__APP_USER__
+Group=__APP_USER__
+WorkingDirectory=__APP_DIR__
+ExecStart=/usr/bin/node __APP_DIR__/src/server.js
+Restart=always
+RestartSec=5
+EnvironmentFile=__APP_DIR__/.env
+# 1 GB RAM friendly: no swap thrash, no OpenFileLimit games needed
+
+[Install]
+WantedBy=multi-user.target

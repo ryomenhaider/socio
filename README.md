@@ -85,26 +85,41 @@ Caveats (TikTok policy, not code):
 
 The model is configurable in `/settings` (default `openai/gpt-4o-mini`; free models like `meta-llama/llama-3.3-70b-instruct` work too).
 
-## Deploying on a 1 GB VPS
+## Deploying on a 1 GB VPS (Oracle Cloud free instance)
 
+Domain: `socio.vektorlabs.xyz` (A record → instance public IP).
+
+1. **DNS:** add an A record `socio.vektorlabs.xyz` → your instance IP.
+2. **OCI console:** VCN → subnet Security List → add ingress rules for TCP 80 and TCP 443.
+3. **Instance OS firewall** (Oracle Ubuntu images use iptables):
+   ```bash
+   sudo iptables -I INPUT -p tcp --dport 80 -j ACCEPT
+   sudo iptables -I INPUT -p tcp --dport 443 -j ACCEPT
+   sudo netfilter-persistent save
+   ```
+4. **Deploy** (installs Node 22, nginx, certbot; sets up the systemd service + TLS):
+   ```bash
+   cd socio
+   bash deploy/install.sh /home/ubuntu/socio
+   ```
+5. **Configure:**
+   ```bash
+   vim /home/ubuntu/socio/.env   # paste API credentials
+   sudo systemctl restart socio
+   ```
+6. **OAuth redirect URIs** (add in each developer console):
+   - LinkedIn: `https://socio.vektorlabs.xyz/auth/linkedin/callback`
+   - Meta: `https://socio.vektorlabs.xyz/auth/meta/callback`
+   - Google: `https://socio.vektorlabs.xyz/auth/youtube/callback`
+   - TikTok: `https://socio.vektorlabs.xyz/auth/tiktok/callback`
+
+Ops:
 ```bash
-# systemd unit: /etc/systemd/system/socio.service
-[Unit]
-Description=socio
-After=network.target
-
-[Service]
-WorkingDirectory=/home/alpha/projects/socio
-ExecStart=/usr/bin/node src/server.js
-Restart=on-failure
-EnvironmentFile=/home/alpha/projects/socio/.env
-User=alpha
-
-[Install]
-WantedBy=multi-user.target
+systemctl status socio
+journalctl -u socio -f
+sudo certbot renew --dry-run
+tar czf backup.tar.gz data/   # full backup: SQLite db + media
 ```
-
-Set `BASE_URL` to your public URL (must match the redirect URI registered with LinkedIn). Optionally put nginx in front for TLS.
 
 ## Data
 
