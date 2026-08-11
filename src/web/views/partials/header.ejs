@@ -10,7 +10,7 @@
     <a href="/dashboard" class="font-display font-bold text-base tracking-tight shrink-0">socio<span class="text-faint">.dev</span></a>
     <nav class="no-scrollbar flex items-center gap-1 overflow-x-auto flex-1 min-w-0 text-sm">
       <% for (const it of NAV) { %>
-        <a href="<%= it.href %>"
+        <a href="<%= it.href %>" aria-current="<%= active === it.key ? 'page' : false %>"
            class="px-2.5 py-1.5 rounded-md whitespace-nowrap transition-colors <%= active === it.key ? 'bg-accent text-accent-fg' : 'text-muted hover:text-text' %>">
           <%= it.label %>
         </a>
@@ -40,9 +40,12 @@
     </div>
     <nav class="flex-1 px-3 py-5 space-y-0.5">
       <% for (const it of NAV) { %>
-        <a href="<%= it.href %>"
-           class="flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors <%= active === it.key ? 'bg-accent text-accent-fg' : 'text-muted hover:text-text hover:bg-surface-2' %>">
+        <a href="<%= it.href %>" aria-current="<%= active === it.key ? 'page' : false %>"
+           class="relative flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors <%= active === it.key ? 'bg-accent text-accent-fg' : 'text-muted hover:text-text hover:bg-surface-2' %>">
           <%= it.label %>
+          <% if (active === it.key) { %>
+            <span class="absolute -left-3 top-1/2 -translate-y-1/2 h-5 w-0.5 bg-accent"></span>
+          <% } %>
         </a>
       <% } %>
     </nav>
