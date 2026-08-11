@@ -7,14 +7,7 @@
 <header class="lg:hidden sticky top-0 z-40 border-b border-border bg-bg/85 backdrop-blur">
   <div class="px-4 py-2.5 flex items-center gap-3">
     <a href="/dashboard" class="font-display font-bold text-base tracking-tight shrink-0">socio<span class="text-faint">.dev</span></a>
-    <nav class="no-scrollbar flex items-center gap-1 overflow-x-auto flex-1 min-w-0 text-sm">
-      <% for (const it of NAV) { %>
-        <a href="<%= it.href %>" aria-current="<%= active === it.key ? 'page' : false %>"
-           class="px-2.5 py-1.5 rounded-md whitespace-nowrap transition-colors <%= active === it.key ? 'bg-accent text-accent-fg' : 'text-muted hover:text-text' %>">
-          <%= it.label %>
-        </a>
-      <% } %>
-    </nav>
+    <div class="flex-1"></div>
     <button type="button" onclick="toggleTheme()" aria-label="Toggle dark mode" title="Toggle dark mode" class="icon-btn shrink-0">
       <svg class="theme-icon-sun w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="4"/>
@@ -24,13 +17,59 @@
         <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
       </svg>
     </button>
-    <% if (user) { %>
-      <form method="post" action="/logout" class="shrink-0">
-        <button class="btn btn-ghost btn-sm">Log out</button>
-      </form>
-    <% } %>
+    <button type="button" id="menu-btn" onclick="toggleDrawer()" aria-label="Open navigation menu" aria-controls="mobile-drawer" aria-expanded="false" class="icon-btn shrink-0">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
   </div>
 </header>
+<div id="drawer-backdrop" class="lg:hidden fixed inset-0 z-50 bg-black/40 opacity-0 pointer-events-none transition-opacity" onclick="closeDrawer()"></div>
+<div id="mobile-drawer" class="lg:hidden fixed inset-y-0 left-0 z-50 w-64 -translate-x-full transition-transform duration-200 ease-out bg-surface border-r border-border flex flex-col" role="dialog" aria-modal="true" aria-label="Navigation menu">
+  <div class="px-6 pt-7 pb-5 border-b border-border">
+    <a href="/dashboard" class="font-display font-bold text-xl tracking-tight">socio<span class="text-faint">.dev</span></a>
+    <p class="micro mt-1.5">Social scheduler</p>
+  </div>
+  <nav class="flex-1 px-3 py-5 space-y-0.5">
+    <% for (const it of NAV) { %>
+      <a href="<%= it.href %>" onclick="closeDrawer()" aria-current="<%= active === it.key ? 'page' : false %>"
+         class="relative flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors <%= active === it.key ? 'bg-accent text-accent-fg' : 'text-muted hover:text-text hover:bg-surface-2' %>">
+        <%= it.label %>
+        <% if (active === it.key) { %>
+          <span class="absolute -left-3 top-1/2 -translate-y-1/2 h-5 w-0.5 bg-accent"></span>
+        <% } %>
+      </a>
+    <% } %>
+  </nav>
+  <% if (user) { %>
+    <div class="px-3 py-4 border-t border-border">
+      <div class="px-3">
+        <span class="text-sm font-medium truncate"><%= user %></span>
+      </div>
+      <form method="post" action="/logout" class="mt-3">
+        <button class="btn btn-ghost btn-sm w-full">Log out</button>
+      </form>
+    </div>
+  <% } %>
+</div>
+<script>
+  const drawerEl = document.getElementById('mobile-drawer');
+  const backdropEl = document.getElementById('drawer-backdrop');
+  const menuBtn = document.getElementById('menu-btn');
+  let drawerOpen = false;
+  function setDrawer(open) {
+    drawerOpen = open;
+    drawerEl.classList.toggle('-translate-x-full', !open);
+    backdropEl.classList.toggle('opacity-0', !open);
+    backdropEl.classList.toggle('pointer-events-none', !open);
+    menuBtn.setAttribute('aria-expanded', String(open));
+    menuBtn.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
+    document.body.classList.toggle('overflow-hidden', open);
+  }
+  function toggleDrawer() { setDrawer(!drawerOpen); }
+  function closeDrawer() { setDrawer(false); }
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+</script>
 <div class="flex-1 flex w-full">
   <aside class="hidden lg:flex flex-col w-60 shrink-0 border-r border-border bg-surface sticky top-0 h-screen">
     <div class="px-6 pt-7 pb-5 border-b border-border">
