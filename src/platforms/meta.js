@@ -4,23 +4,16 @@ const config = require('../config');
 const GRAPH = 'https://graph.facebook.com';
 const VERSION = 'v26.0';
 
-const SCOPES = [
-  'pages_show_list',
-  'pages_manage_posts',
-  'pages_read_engagement',
-  'instagram_basic',
-  'instagram_content_publish',
-  'business_management',
-  'ads_management',
-  'ads_read',
-].join(',');
-
 function redirectUri() {
   return `${config.baseUrl}/auth/meta/callback`;
 }
 
 function available() {
-  return Boolean(config.meta.clientId && config.meta.clientSecret);
+  return Boolean(
+    config.meta.clientId &&
+      config.meta.clientSecret &&
+      config.meta.configId
+  );
 }
 
 function buildAuthorizeUrl(state) {
@@ -28,7 +21,9 @@ function buildAuthorizeUrl(state) {
     client_id: config.meta.clientId,
     redirect_uri: redirectUri(),
     state,
-    scope: SCOPES,
+    config_id: config.meta.configId,
+    response_type: 'code',
+    override_default_response_type: 'true',
   });
   return `https://www.facebook.com/${VERSION}/dialog/oauth?${params.toString()}`;
 }
