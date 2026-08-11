@@ -49,10 +49,23 @@ sed -e "s|__APP_DIR__|${APP_DIR}|g" -e "s|__APP_USER__|${APP_USER}|g" \
   "${APP_DIR}/deploy/socio.service" | sudo tee /etc/systemd/system/socio.service >/dev/null
 sudo systemctl daemon-reload
 sudo systemctl enable --now socio
-sleep 1
-curl -sf http://127.0.0.1:3000/healthz >/dev/null && echo "    socio is UP on http://127.0.0.1:3000" || {
-  echo "    socio failed to start - check: journalctl -u socio -n 50"; exit 1;
-}
+echo "    waiting for socio to come up (up to 30s)..."
+up=0
+for i in $(seq 1 30); do
+  if curl -sf http://127.0.0.1:3000/healthz >/dev/null 2>&1; then
+    up=1
+    break
+  fi
+  if ! systemctl is-active --quiet socio; then
+    break
+  fi
+  sleep 1
+done
+if [[ "${up}" != "1" ]]; then
+  echo "    socio failed to start - check: journalctl -u socio -n 50"
+  exit 1
+fi
+echo "    socio is UP on http://127.0.0.1:3000"
 
 if [[ -n "${DOMAIN}" ]]; then
   echo "==> Configuring nginx + certbot for ${DOMAIN}"
