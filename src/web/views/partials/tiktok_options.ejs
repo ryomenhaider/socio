@@ -5,7 +5,7 @@
   <div class="grid sm:grid-cols-2 gap-4">
     <div>
       <label class="label">Privacy <span class="text-err-fg">*</span></label>
-      <select name="tiktok_privacy_level" x-model="privacy" class="input">
+      <select name="tiktok_privacy_level_<%= accountId %>" x-model="privacy" class="input">
         <option value="">Select…</option>
         <% for (const p of info.privacy_level_options || []) { %>
           <option value="<%= p %>"><%= p.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) %></option>
@@ -14,25 +14,25 @@
     </div>
     <div>
       <label class="label">Title</label>
-      <input name="tiktok_title" type="text" maxlength="2200" placeholder="Optional caption title" class="input">
+      <input name="tiktok_title_<%= accountId %>" type="text" maxlength="2200" placeholder="Optional caption title" class="input">
     </div>
   </div>
 
   <div class="flex flex-wrap gap-x-6 gap-y-3 text-sm">
     <label class="flex items-center gap-2.5 cursor-pointer">
-      <input type="checkbox" name="tiktok_disable_comment" value="1" <%= info.comment_disabled ? 'checked disabled' : '' %> class="accent-accent">
+      <input type="checkbox" name="tiktok_disable_comment_<%= accountId %>" value="1" <%= info.comment_disabled ? 'checked disabled' : '' %> class="accent-accent">
       Disable comments
     </label>
     <label class="flex items-center gap-2.5 cursor-pointer">
-      <input type="checkbox" name="tiktok_disable_duet" value="1" <%= info.duet_disabled ? 'checked disabled' : '' %> class="accent-accent">
+      <input type="checkbox" name="tiktok_disable_duet_<%= accountId %>" value="1" <%= info.duet_disabled ? 'checked disabled' : '' %> class="accent-accent">
       Disable duets
     </label>
     <label class="flex items-center gap-2.5 cursor-pointer">
-      <input type="checkbox" name="tiktok_disable_stitch" value="1" <%= info.stitch_disabled ? 'checked disabled' : '' %> class="accent-accent">
+      <input type="checkbox" name="tiktok_disable_stitch_<%= accountId %>" value="1" <%= info.stitch_disabled ? 'checked disabled' : '' %> class="accent-accent">
       Disable stitches
     </label>
     <label class="flex items-center gap-2.5 cursor-pointer">
-      <input type="checkbox" name="tiktok_is_aigc" value="1" class="accent-accent">
+      <input type="checkbox" name="tiktok_is_aigc_<%= accountId %>" value="1" class="accent-accent">
       AI-generated content
     </label>
   </div>
@@ -40,16 +40,16 @@
   <div class="border-t border-border pt-5">
     <p class="text-sm text-muted mb-3">Does this content promote yourself, a brand, a product or a service?</p>
     <label class="flex items-center gap-3 cursor-pointer text-sm">
-      <input type="checkbox" name="tiktok_disclosure" value="your_brand" x-model="disclosure" true-value="your_brand" false-value="none" class="accent-accent">
+      <input type="checkbox" name="tiktok_disclosure_<%= accountId %>" value="your_brand" x-model="disclosure" true-value="your_brand" false-value="none" class="accent-accent">
       Yes — it's promotional
     </label>
     <div x-show="disclosure !== 'none'" x-cloak class="mt-3 pl-7 space-y-2.5">
       <label class="flex items-center gap-2.5 text-sm cursor-pointer">
-        <input type="radio" name="tiktok_disclosure" value="your_brand" x-model="disclosure" class="accent-accent">
+        <input type="radio" name="tiktok_disclosure_<%= accountId %>" value="your_brand" x-model="disclosure" class="accent-accent">
         Your own brand (organic)
       </label>
       <label class="flex items-center gap-2.5 text-sm cursor-pointer">
-        <input type="radio" name="tiktok_disclosure" value="branded" x-model="disclosure" class="accent-accent">
+        <input type="radio" name="tiktok_disclosure_<%= accountId %>" value="branded" x-model="disclosure" class="accent-accent">
         Branded content (a third party / paid partnership)
       </label>
       <p x-show="disclosure === 'branded' && privacy === 'SELF_ONLY'" x-cloak class="text-xs text-warn-fg">
@@ -60,7 +60,7 @@
 
   <div class="border-t border-border pt-5">
     <label class="flex items-start gap-3 cursor-pointer text-sm">
-      <input type="checkbox" name="tiktok_consent" value="1" x-model="consent" class="accent-accent mt-0.5">
+      <input type="checkbox" name="tiktok_consent_<%= accountId %>" value="1" x-model="consent" class="accent-accent mt-0.5">
       <span x-text="disclosure === 'branded'
         ? 'By posting, you agree to the TikTok Branded Content Policy and Music Usage Confirmation.'
         : 'By posting, you agree to the TikTok Music Usage Confirmation.'"></span>

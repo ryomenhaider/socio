@@ -35,17 +35,24 @@ router.get('/api/tiktok/options', async (req, res) => {
       ok: false,
       error: 'TikTok account not found.',
       info: null,
+      accountId: req.query.account_id,
     });
   }
   try {
     const info = await fetchCreatorInfo(account);
-    res.render('partials/tiktok_options', { ok: true, error: null, info });
+    res.render('partials/tiktok_options', {
+      ok: true,
+      error: null,
+      info,
+      accountId: account.id,
+    });
   } catch (err) {
     console.error('[tiktok options]', err);
     res.render('partials/tiktok_options', {
       ok: false,
       error: String(err.message || err),
       info: null,
+      accountId: account.id,
     });
   }
 });

@@ -49,23 +49,30 @@ async function publishTarget(target) {
   }
   const extra = target.extra ? JSON.parse(target.extra) : {};
   const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(target.post_id);
+  const content = { ...post };
+  if (target.text) content.text = target.text;
+  if (target.media_path) {
+    content.media_path = target.media_path;
+    content.media_type = target.media_type;
+    content.media_name = target.media_name;
+  }
   const media =
-    post.media_path && fs.existsSync(post.media_path)
+    content.media_path && fs.existsSync(content.media_path)
       ? {
-          type: post.media_type || 'image',
-          mimeType: post.media_type === 'video' ? 'video/mp4' : 'image/jpeg',
-          buffer: fs.readFileSync(post.media_path),
-          name: path.basename(post.media_path),
+          type: content.media_type || 'image',
+          mimeType: content.media_type === 'video' ? 'video/mp4' : 'image/jpeg',
+          buffer: fs.readFileSync(content.media_path),
+          name: path.basename(content.media_path),
         }
       : null;
   let accountForCall = await refreshAccountIfNeeded(account, adapter);
   try {
-    const result = await adapter.publish(accountForCall, post, media, extra, target.external_id);
+    const result = await adapter.publish(accountForCall, content, media, extra, target.external_id);
     return result;
   } catch (err) {
     if (isTokenError(err) && adapter.refresh) {
       accountForCall = await refreshAccountIfNeeded(account, adapter, true);
-      const result = await adapter.publish(accountForCall, post, media, extra, target.external_id);
+      const result = await adapter.publish(accountForCall, content, media, extra, target.external_id);
       return result;
     }
     throw err;
