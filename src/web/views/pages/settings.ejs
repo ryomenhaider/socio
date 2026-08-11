@@ -1,27 +1,30 @@
 <%- include('../partials/head') %>
 <%- include('../partials/header') %>
 
+<div class="mb-10">
+  <p class="micro mb-1.5">Preferences</p>
+  <h1 class="font-display text-3xl font-bold tracking-tight">Settings</h1>
+</div>
+
 <% if (msg === 'saved') { %>
-  <div class="mb-4 p-3 rounded-xl bg-emerald-950 border border-emerald-800 text-emerald-300">Settings saved.</div>
+  <div class="alert alert-ok mb-6">Settings saved.</div>
 <% } %>
 
-<h1 class="text-2xl font-bold mb-6">Settings</h1>
-
-<form method="post" action="/settings" class="max-w-xl space-y-6">
+<form method="post" action="/settings" class="card p-6 max-w-xl space-y-6">
   <div>
-    <label for="openrouter_api_key" class="block text-sm font-medium mb-2">OpenRouter API key</label>
+    <label for="openrouter_api_key" class="label">OpenRouter API key</label>
     <input id="openrouter_api_key" name="openrouter_api_key" type="password" value="<%= key %>" autocomplete="off"
-      placeholder="sk-or-v1-…"
-      class="w-full rounded-xl bg-slate-900 border border-slate-700 px-4 py-3 focus:border-violet-500 focus:outline-none">
-    <p class="text-xs text-slate-600 mt-1">Get one free at <span class="text-slate-400">openrouter.ai/keys</span>. Used for AI captions.</p>
+      placeholder="sk-or-v1-…" class="input">
+    <p class="text-xs text-faint mt-2">Get one free at <span class="font-mono text-muted">openrouter.ai/keys</span>. Used for AI captions.</p>
   </div>
   <div>
-    <label for="openrouter_model" class="block text-sm font-medium mb-2">AI model</label>
-    <input id="openrouter_model" name="openrouter_model" type="text" value="<%= model %>"
-      class="w-full rounded-xl bg-slate-900 border border-slate-700 px-4 py-3 focus:border-violet-500 focus:outline-none">
-    <p class="text-xs text-slate-600 mt-1">Any OpenRouter model id, e.g. <span class="text-slate-400">openai/gpt-4o-mini</span> or <span class="text-slate-400">meta-llama/llama-3.3-70b-instruct</span>.</p>
+    <label for="openrouter_model" class="label">AI model</label>
+    <input id="openrouter_model" name="openrouter_model" type="text" value="<%= model %>" class="input">
+    <p class="text-xs text-faint mt-2">Any OpenRouter model id, e.g. <span class="font-mono text-muted">openai/gpt-4o-mini</span> or <span class="font-mono text-muted">meta-llama/llama-3.3-70b-instruct</span>.</p>
   </div>
-  <button class="px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 font-semibold transition-colors">Save</button>
+  <div class="pt-2">
+    <button class="btn btn-primary">Save</button>
+  </div>
 </form>
 
 <%- include('../partials/foot') %>

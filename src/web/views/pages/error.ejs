@@ -1,7 +1,11 @@
 <%- include('../partials/head') %>
-<div class="max-w-6xl mx-auto px-4 py-24 text-center">
-  <h1 class="text-6xl font-bold mb-4"><%= code %></h1>
-  <p class="text-slate-400"><%= message %></p>
-  <a href="/" class="inline-block mt-6 text-violet-400 underline">Back to dashboard</a>
+<div class="flex-1 flex w-full">
+  <div class="flex-1 min-w-0 flex items-center justify-center px-4">
+    <main class="max-w-xl w-full py-24 text-center">
+      <p class="font-display text-7xl font-bold tracking-tight"><%= code %></p>
+      <p class="mt-4 text-sm text-muted break-words"><%= message %></p>
+      <a href="/" class="link inline-block mt-8 text-sm">Back to dashboard</a>
+    </main>
+  </div>
 </div>
 <%- include('../partials/foot') %>
