@@ -4,8 +4,50 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= title %> · Socio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <script>
+    (function () {
+      var saved = null;
+      try { saved = localStorage.getItem('socio-theme'); } catch (e) {}
+      if (saved === 'dark' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+    window.toggleTheme = function () {
+      var el = document.documentElement;
+      var dark = el.classList.toggle('dark');
+      try { localStorage.setItem('socio-theme', dark ? 'dark' : 'light'); } catch (e) {}
+    };
+  </script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: 'rgb(var(--bg) / <alpha-value>)',
+            surface: 'rgb(var(--surface) / <alpha-value>)',
+            'surface-2': 'rgb(var(--surface-2) / <alpha-value>)',
+            input: 'rgb(var(--input) / <alpha-value>)',
+            border: 'rgb(var(--border) / <alpha-value>)',
+            text: 'rgb(var(--text) / <alpha-value>)',
+            muted: 'rgb(var(--muted) / <alpha-value>)',
+            faint: 'rgb(var(--faint) / <alpha-value>)',
+            accent: 'rgb(var(--accent) / <alpha-value>)',
+            'accent-fg': 'rgb(var(--accent-fg) / <alpha-value>)',
+            ok: { bg: 'rgb(var(--ok-bg) / <alpha-value>)', fg: 'rgb(var(--ok-fg) / <alpha-value>)' },
+            warn: { bg: 'rgb(var(--warn-bg) / <alpha-value>)', fg: 'rgb(var(--warn-fg) / <alpha-value>)' },
+            err: { bg: 'rgb(var(--err-bg) / <alpha-value>)', fg: 'rgb(var(--err-fg) / <alpha-value>)' },
+            info: { bg: 'rgb(var(--info-bg) / <alpha-value>)', fg: 'rgb(var(--info-fg) / <alpha-value>)' }
+          }
+        }
+      }
+    };
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/theme.css">
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+<body class="bg-bg text-text min-h-screen flex flex-col">

@@ -6,7 +6,7 @@ const tiktok = require('./tiktok');
 
 const metaEntry = definePlatform({
   id: 'meta',
-  label: 'Meta — Facebook + Instagram',
+  label: 'Meta',
   available: meta.facebook.available,
   missing: 'META_CLIENT_ID and META_CLIENT_SECRET are not set in .env',
   connectNote:
