@@ -1,0 +1,24 @@
+<% if (ok) { %>
+<div class="space-y-4">
+  <% for (const r of results) { %>
+    <div class="card p-4 border-accent">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <span class="chip"><span class="dot bg-accent"></span><%= r.label %></span>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="copyAiCopy(this)" class="btn btn-ghost btn-sm">Copy</button>
+          <button type="button" onclick="useAiCopy(this)" class="btn btn-primary btn-sm">Use this copy</button>
+        </div>
+      </div>
+      <% if (r.title) { %>
+        <p class="text-sm font-semibold text-text mb-1">Title</p>
+        <p class="text-sm text-text whitespace-pre-wrap leading-relaxed mb-3"><%= r.title %></p>
+        <p class="text-xs text-faint mb-1">Description</p>
+      <% } %>
+      <textarea class="hidden ai-copy-data"><%= r.title ? r.title + '\n\n' + r.description : r.text %></textarea>
+      <p class="text-sm text-text whitespace-pre-wrap leading-relaxed"><%= r.title ? r.description : r.text %></p>
+    </div>
+  <% } %>
+</div>
+<% } else { %>
+<div class="alert alert-error"><%= error %></div>
+<% } %>
