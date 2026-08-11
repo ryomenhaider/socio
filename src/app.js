@@ -8,7 +8,7 @@ const sessionRoutes = require('./routes/session.routes');
 const authRoutes = require('./routes/auth.routes');
 const accountRoutes = require('./routes/accounts.routes');
 const postRoutes = require('./routes/posts.routes');
-const settingRoutes = require('./routes/settings.routes');
+const copyRoutes = require('./routes/copy.routes');
 
 const app = express();
 
@@ -42,7 +42,7 @@ app.use('/media', express.static(config.mediaDir, { fallthrough: true }));
 app.use(authRoutes);
 app.use(accountRoutes);
 app.use(postRoutes);
-app.use(settingRoutes);
+app.use(copyRoutes);
 
 app.use((req, res) => {
   res.status(404).render('pages/error', { title: 'Not found', code: 404, message: 'Page not found.' });

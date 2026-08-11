@@ -3,7 +3,7 @@ const path = require('path');
 const express = require('express');
 const { db } = require('../db');
 const { upload, mediaTypeFromMime } = require('../services/upload');
-const { generateCaption, hasKey } = require('../services/ai');
+const { AI_MODELS, generateCaption, hasKey, getModel } = require('../services/ai');
 const { runOnce } = require('../services/publisher');
 
 const router = express.Router();
@@ -64,6 +64,15 @@ router.get('/compose', (req, res) => {
     title: 'Compose',
     accounts,
     aiConfigured: hasKey(),
+    aiModels: AI_MODELS,
+    aiModel: getModel(),
+    aiPlatforms: [
+      { id: 'linkedin', label: 'LinkedIn' },
+      { id: 'facebook', label: 'Facebook' },
+      { id: 'instagram', label: 'Instagram' },
+      { id: 'youtube', label: 'YouTube' },
+      { id: 'tiktok', label: 'TikTok' },
+    ],
     msg: req.query.msg || null,
     active: 'compose',
   });

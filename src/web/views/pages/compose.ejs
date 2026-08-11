@@ -8,7 +8,7 @@
 
 <% const MSG = {
   no_platform: 'Select at least one platform to post to.',
-  empty: 'Write some text or use the AI caption generator.',
+  empty: 'Write some text or use the AI copywriter.',
   error: 'Something went wrong. Try again.',
   no_consent: 'TikTok requires your consent to post — check the music usage confirmation box.',
   no_privacy: 'TikTok requires a privacy level — pick one from the dropdown.'
@@ -40,13 +40,13 @@
 
   <div class="card p-6">
     <div class="flex flex-wrap items-center gap-2.5 mb-4">
-      <h2 class="font-display font-semibold text-lg tracking-tight">AI caption generator</h2>
+      <h2 class="font-display font-semibold text-lg tracking-tight">AI copywriter</h2>
       <% if (!aiConfigured) { %>
-        <span class="chip"><span class="dot bg-warn-fg"></span>add an OpenRouter key in Settings</span>
+        <span class="chip"><span class="dot bg-warn-fg"></span>add OPENROUTER_API_KEY in .env</span>
       <% } %>
     </div>
     <div class="grid sm:grid-cols-3 gap-4">
-      <div class="sm:col-span-2">
+      <div class="sm:col-span-3">
         <label for="ai-topic" class="label">Topic or keywords</label>
         <input id="ai-topic" name="topic" type="text" placeholder="e.g. launch of our new analytics dashboard" class="input">
       </div>
@@ -60,7 +60,7 @@
           <option value="empathetic">Empathetic</option>
         </select>
       </div>
-      <div class="sm:col-span-2">
+      <div>
         <label for="ai-length" class="label">Length</label>
         <select id="ai-length" name="length" class="input">
           <option value="medium">Medium</option>
@@ -68,14 +68,36 @@
           <option value="long">Long</option>
         </select>
       </div>
+      <div>
+        <label for="ai-model" class="label">AI model</label>
+        <select id="ai-model" name="model" class="input">
+          <% for (const m of aiModels) { %>
+            <option value="<%= m.id %>" <%= m.id === aiModel ? 'selected' : '' %>><%= m.label %></option>
+          <% } %>
+        </select>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="label">Platforms</label>
+        <div id="ai-platforms" class="flex flex-wrap gap-x-5 gap-y-2">
+          <% for (const p of aiPlatforms) { %>
+            <label class="flex items-center gap-2 text-sm text-muted cursor-pointer">
+              <input type="checkbox" name="platforms" value="<%= p.id %>" class="w-4 h-4 accent-accent">
+              <%= p.label %>
+            </label>
+          <% } %>
+        </div>
+      </div>
       <div class="flex items-end">
-        <button type="button" hx-post="/api/caption" hx-include="#ai-topic,#ai-tone,#ai-length" hx-target="#caption-result" hx-swap="innerHTML"
+        <button type="button" hx-post="/api/copy" hx-include="#ai-topic,#ai-tone,#ai-length,#ai-model,#ai-platforms" hx-target="#copy-result" hx-swap="innerHTML"
           class="btn btn-ghost w-full" <%= aiConfigured ? '' : 'disabled' %>>
-          Generate caption
+          Generate copy
         </button>
       </div>
     </div>
-    <div id="caption-result" class="mt-4"></div>
+    <p class="text-xs text-faint mt-3 leading-relaxed">
+      One prompt, one tailored piece per platform — LinkedIn post, YouTube title + description, TikTok caption, and more.
+    </p>
+    <div id="copy-result" class="mt-4"></div>
   </div>
 
   <div class="card p-6">
@@ -153,6 +175,31 @@
     <% } %>
   </div>
 </form>
+
+<script>
+  const aiCopyData = (btn) => btn.closest('.card').querySelector('.ai-copy-data').value;
+  const copyAiCopy = (btn) => {
+    const text = aiCopyData(btn);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    btn.textContent = 'Copied';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+  };
+  const useAiCopy = (btn) => {
+    const postText = document.getElementById('post-text');
+    postText.value = aiCopyData(btn);
+    postText.dispatchEvent(new Event('input'));
+    btn.closest('.card').remove();
+  };
+</script>
 
 <script>
   const youtubeAccountId = '<%= (accounts.find(a => a.platform === "youtube") || {}).id || "" %>';
