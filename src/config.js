@@ -6,6 +6,7 @@ const dataDir = path.resolve(process.env.DATA_DIR || './data');
 const config = {
   port: parseInt(process.env.PORT || '3000', 10),
   baseUrl: (process.env.BASE_URL || 'http://localhost:3000').replace(/\/+$/, ''),
+  sessionSecret: process.env.SESSION_SECRET || 'dev-only-change-me',
   dataDir,
   mediaDir: path.join(dataDir, 'media'),
   dbPath: path.join(dataDir, 'socio.db'),

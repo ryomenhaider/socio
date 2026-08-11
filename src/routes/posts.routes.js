@@ -19,7 +19,7 @@ const MSG = {
   no_privacy: { ok: false, text: 'TikTok requires a privacy level. Pick one from the dropdown.' },
 };
 
-router.get('/', (req, res) => {
+router.get('/dashboard', (req, res) => {
   const stats = {
     drafts: db.prepare("SELECT COUNT(*) c FROM posts WHERE status = 'draft'").get().c,
     scheduled: db

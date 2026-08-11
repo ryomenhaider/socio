@@ -2,6 +2,9 @@ const express = require('express');
 const path = require('path');
 const config = require('./config');
 const { db } = require('./db');
+const { parseCookies, requireAuth } = require('./auth');
+const publicRoutes = require('./routes/public.routes');
+const sessionRoutes = require('./routes/session.routes');
 const authRoutes = require('./routes/auth.routes');
 const accountRoutes = require('./routes/accounts.routes');
 const postRoutes = require('./routes/posts.routes');
@@ -16,19 +19,26 @@ app.disable('x-powered-by');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.use('/media', express.static(config.mediaDir, { fallthrough: true }));
-app.use(express.static(path.join(__dirname, 'web', 'static')));
-
 app.use((req, res, next) => {
+  req.cookies = parseCookies(req.headers.cookie);
   res.locals.baseUrl = config.baseUrl;
+  res.locals.user = null;
   next();
 });
+
+app.use(express.static(path.join(__dirname, 'web', 'static')));
 
 app.get('/healthz', (req, res) => {
   db.prepare('SELECT 1').get();
   res.send('ok');
 });
 
+app.use(publicRoutes);
+app.use(sessionRoutes);
+
+app.use(requireAuth);
+
+app.use('/media', express.static(config.mediaDir, { fallthrough: true }));
 app.use(authRoutes);
 app.use(accountRoutes);
 app.use(postRoutes);

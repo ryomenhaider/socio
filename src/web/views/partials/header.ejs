@@ -5,7 +5,7 @@
     </a>
     <nav class="flex gap-1 text-sm">
       <% const items = [
-        { href: '/', label: 'Dashboard', key: 'dashboard' },
+        { href: '/dashboard', label: 'Dashboard', key: 'dashboard' },
         { href: '/compose', label: 'Compose', key: 'compose' },
         { href: '/posts', label: 'Posts', key: 'posts' },
         { href: '/accounts', label: 'Accounts', key: 'accounts' },
@@ -18,6 +18,12 @@
         </a>
       <% } %>
     </nav>
+    <% if (user) { %>
+      <form method="post" action="/logout" class="ml-auto flex items-center gap-3">
+        <span class="text-xs text-slate-500"><%= user %></span>
+        <button class="text-xs px-3 py-1.5 rounded-md bg-slate-800 text-slate-300 hover:bg-slate-700">Log out</button>
+      </form>
+    <% } %>
   </div>
 </header>
 <main class="flex-1 max-w-6xl mx-auto px-4 py-6 w-full">

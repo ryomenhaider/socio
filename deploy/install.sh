@@ -38,6 +38,10 @@ if [[ ! -f "${APP_DIR}/.env" ]]; then
 else
   echo "    .env already exists - leaving it alone."
 fi
+if ! grep -q '^SESSION_SECRET=.' "${APP_DIR}/.env"; then
+  echo "SESSION_SECRET=$(openssl rand -hex 32)" >> "${APP_DIR}/.env"
+  echo "    Generated a random SESSION_SECRET."
+fi
 
 if [[ -n "${DOMAIN}" ]]; then
   sed -i "s|^BASE_URL=.*|BASE_URL=https://${DOMAIN}|" "${APP_DIR}/.env" || true
