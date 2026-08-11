@@ -4,17 +4,6 @@ const config = require('../config');
 const GRAPH = 'https://graph.facebook.com';
 const VERSION = 'v26.0';
 
-const SCOPES = [
-  'pages_show_list',
-  'pages_manage_posts',
-  'pages_read_engagement',
-  'instagram_basic',
-  'instagram_content_publish',
-  'business_management',
-  'ads_management',
-  'ads_read',
-].join(',');
-
 function redirectUri() {
   return `${config.baseUrl}/auth/meta/callback`;
 }
@@ -28,7 +17,9 @@ function buildAuthorizeUrl(state) {
     client_id: config.meta.clientId,
     redirect_uri: redirectUri(),
     state,
-    scope: SCOPES,
+    config_id: config.meta.configId,
+    response_type: 'code',
+    override_default_response_type: 'true',
   });
   return `https://www.facebook.com/${VERSION}/dialog/oauth?${params.toString()}`;
 }
@@ -134,6 +125,7 @@ async function handleCallback(code, state) {
   const accounts = [];
   for (const page of pages) {
     accounts.push({
+      platform: 'facebook',
       displayName: `${page.name} (page)`,
       token: JSON.stringify({
         access_token: page.access_token,
@@ -145,6 +137,7 @@ async function handleCallback(code, state) {
     const ig = await fetchIgAccount(page.id, page.access_token);
     if (ig) {
       accounts.push({
+        platform: 'instagram',
         displayName: `@${ig.username || ig.id} (Instagram)`,
         token: JSON.stringify({
           access_token: page.access_token,

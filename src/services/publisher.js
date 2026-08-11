@@ -44,6 +44,9 @@ async function publishTarget(target) {
   if (!adapter || !adapter.available) {
     throw new Error(`${target.platform} integration is not available yet`);
   }
+  if (typeof adapter.publish !== 'function') {
+    throw new Error(`${target.platform}: publish is not supported by this integration`);
+  }
   const extra = target.extra ? JSON.parse(target.extra) : {};
   const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(target.post_id);
   const media =

@@ -45,6 +45,7 @@ router.get('/auth/:platform/callback', async (req, res) => {
   try {
     const result = await adapter.handleCallback(code, state);
     const incoming = (result.accounts || []).map((a) => ({
+      platform: a.platform || adapter.id,
       displayName: a.displayName,
       token: typeof a.token === 'string' ? a.token : JSON.stringify(a.token),
     }));
@@ -58,7 +59,7 @@ router.get('/auth/:platform/callback', async (req, res) => {
       const existing = profileId
         ? db
             .prepare('SELECT * FROM accounts WHERE platform = ?')
-            .all(adapter.id)
+            .all(acc.platform)
             .find((a) => JSON.parse(a.token).profile?.id === profileId)
         : null;
       if (existing) {
@@ -71,7 +72,7 @@ router.get('/auth/:platform/callback', async (req, res) => {
       } else {
         db.prepare(
           'INSERT INTO accounts (platform, display_name, token) VALUES (?, ?, ?)'
-        ).run(adapter.id, acc.displayName, acc.token);
+        ).run(acc.platform, acc.displayName, acc.token);
         added += 1;
       }
     }
