@@ -105,46 +105,70 @@
     <% if (accounts.length === 0) { %>
       <p class="text-sm text-muted">No connected accounts. <a href="/accounts" class="link">Connect one first</a>.</p>
     <% } else { %>
+      <% const MEDIA_HINTS = {
+        linkedin: 'Image recommended (1200×627). A text-only post works too.',
+        facebook: 'Image or video.',
+        instagram: 'Image or video (1080×1080 square or 4:5). Instagram requires media.',
+        youtube: 'Video file (mp4). YouTube requires a video.',
+        tiktok: 'Video file (mp4). TikTok requires a video.'
+      }; %>
       <div class="card divide-y divide-border">
         <% for (const a of accounts) { %>
-          <label class="flex items-center gap-3.5 px-4 py-3 cursor-pointer transition-colors hover:bg-surface-2">
-            <input type="checkbox" name="platforms" value="<%= a.id %>" class="w-4 h-4 accent-accent"
-              <% if (a.platform === 'tiktok') { %>
-                hx-get="/api/tiktok/options?account_id=<%= a.id %>" hx-trigger="change" hx-target="#tiktok-panel" hx-swap="innerHTML"
+          <div>
+            <label class="flex items-center gap-3.5 px-4 py-3 cursor-pointer transition-colors hover:bg-surface-2">
+              <input type="checkbox" name="platforms" value="<%= a.id %>" class="w-4 h-4 accent-accent"
+                onchange="document.getElementById('account-panel-<%= a.id %>').classList.toggle('hidden', !this.checked)"
+                <% if (a.platform === 'tiktok') { %>
+                  hx-get="/api/tiktok/options?account_id=<%= a.id %>" hx-trigger="change" hx-target="#tiktok-panel-<%= a.id %>" hx-swap="innerHTML"
+                <% } %>
+              >
+              <span class="capitalize font-medium text-sm w-24"><%= a.platform %></span>
+              <span class="text-sm text-muted truncate"><%= a.display_name %></span>
+            </label>
+            <div id="account-panel-<%= a.id %>" class="hidden px-4 pb-5 pt-1 space-y-4">
+              <div>
+                <label for="text-<%= a.id %>" class="label">Text for <%= a.platform %></label>
+                <textarea id="text-<%= a.id %>" name="text_<%= a.id %>" data-platform="<%= a.platform %>" rows="3" maxlength="3000"
+                  placeholder="Leave empty to use the shared post text"
+                  class="input leading-relaxed"></textarea>
+                <p class="text-xs text-faint mt-2">Leave empty to use the shared "Post text" above.</p>
+              </div>
+              <div>
+                <label class="label">Media <span class="font-normal text-faint">(optional)</span></label>
+                <input type="file" name="media_<%= a.id %>" accept="image/*,video/*"
+                  class="block w-full text-sm text-faint file:mr-4 file:py-2 file:px-4 file:rounded-md file:border file:border-border file:bg-surface-2 file:text-text hover:file:bg-input">
+                <p class="text-xs text-faint mt-2"><%= MEDIA_HINTS[a.platform] || 'Image or video.' %></p>
+              </div>
+              <% if (a.platform === 'youtube') { %>
+                <div class="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="label">Video title</label>
+                    <input name="youtube_title_<%= a.id %>" data-platform="youtube" data-role="title" type="text" maxlength="100"
+                      placeholder="Leave empty to use the text" class="input">
+                  </div>
+                  <div>
+                    <label class="label">Visibility</label>
+                    <select name="youtube_privacy_<%= a.id %>" class="input">
+                      <option value="public">Public</option>
+                      <option value="unlisted">Unlisted</option>
+                      <option value="private">Private</option>
+                    </select>
+                  </div>
+                </div>
               <% } %>
-            >
-            <span class="capitalize font-medium text-sm w-24"><%= a.platform %></span>
-            <span class="text-sm text-muted truncate"><%= a.display_name %></span>
-          </label>
+              <% if (a.platform === 'tiktok') { %>
+                <div id="tiktok-panel-<%= a.id %>"></div>
+              <% } %>
+            </div>
+          </div>
         <% } %>
       </div>
       <p class="text-xs text-faint mt-3 leading-relaxed">
-        Notes: Instagram needs a business account and requires media. YouTube and TikTok need a video file.
+        Per-platform fields are optional — anything left empty falls back to the shared post text/media above.
+        Instagram needs a business account and requires media. YouTube and TikTok need a video file.
         TikTok videos can take a few minutes to appear after posting.
       </p>
     <% } %>
-  </div>
-
-  <div id="tiktok-panel"></div>
-
-  <div id="youtube-settings" class="hidden">
-    <div class="card p-6">
-      <h2 class="font-display font-semibold text-lg tracking-tight mb-4">YouTube settings</h2>
-      <div class="grid sm:grid-cols-2 gap-4">
-        <div>
-          <label class="label">Video title</label>
-          <input name="youtube_title" type="text" maxlength="100" placeholder="Leave empty to use the post text" class="input">
-        </div>
-        <div>
-          <label class="label">Visibility</label>
-          <select name="youtube_privacy" class="input">
-            <option value="public">Public</option>
-            <option value="unlisted">Unlisted</option>
-            <option value="private">Private</option>
-          </select>
-        </div>
-      </div>
-    </div>
   </div>
 
   <div class="card p-6">
@@ -199,18 +223,6 @@
     postText.dispatchEvent(new Event('input'));
     btn.closest('.card').remove();
   };
-</script>
-
-<script>
-  const youtubeAccountId = '<%= (accounts.find(a => a.platform === "youtube") || {}).id || "" %>';
-  if (youtubeAccountId) {
-    const settings = document.getElementById('youtube-settings');
-    document.querySelectorAll('input[name="platforms"]').forEach((box) => {
-      if (box.value === youtubeAccountId) {
-        box.addEventListener('change', (e) => settings.classList.toggle('hidden', !e.target.checked));
-      }
-    });
-  }
 </script>
 
 <script>

@@ -21,37 +21,39 @@
   <div class="space-y-4">
     <% for (const p of posts) { %>
       <article class="card p-6">
-        <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
-          <div class="min-w-0 flex-1">
-            <p class="text-[15px] leading-relaxed whitespace-pre-wrap break-words"><%= p.text %></p>
-            <% if (p.mediaUrl) { %>
-              <div class="mt-4">
-                <% if (p.media_type === 'video') { %>
-                  <video src="<%= p.mediaUrl %>" controls class="max-h-56 w-full max-w-full rounded-lg border border-border bg-surface-2"></video>
-                <% } else { %>
-                  <img src="<%= p.mediaUrl %>" alt="" class="max-h-56 max-w-full rounded-lg border border-border bg-surface-2">
-                <% } %>
-              </div>
-            <% } %>
-          </div>
-          <p class="text-xs text-faint font-mono shrink-0">Created <%= p.created_at.slice(0, 16) %> UTC</p>
-        </div>
+        <p class="text-xs text-faint font-mono mb-4">Created <%= p.created_at.slice(0, 16) %> UTC</p>
         <% const targets = targetsByPost.get(p.id) || []; %>
-        <div class="flex flex-wrap gap-2">
+        <div class="space-y-4">
           <% for (const t of targets) { %>
-            <span class="chip">
-              <span class="capitalize"><%= t.account_platform %></span>
-              <span class="text-faint">→</span>
-              <span class="text-muted"><%= t.account_name %></span>
-              <span class="dot
-                <%= t.status === 'published' ? 'bg-ok-fg' : '' %><%= t.status === 'scheduled' ? 'bg-info-fg' : '' %><%= t.status === 'publishing' ? 'bg-warn-fg' : '' %><%= t.status === 'failed' ? 'bg-err-fg' : '' %>"></span>
-              <span class="<%= t.status === 'failed' ? 'text-err-fg font-semibold' : '' %>"><%= t.status %></span>
-              <% if (t.status === 'failed') { %>
-                <form method="post" action="/targets/<%= t.id %>/retry" class="inline">
-                  <button class="link">retry</button>
-                </form>
+            <div class="rounded-lg border border-border p-4">
+              <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <span class="chip">
+                  <span class="capitalize"><%= t.account_platform %></span>
+                  <span class="text-faint">→</span>
+                  <span class="text-muted"><%= t.account_name %></span>
+                </span>
+                <span class="chip">
+                  <span class="dot
+                    <%= t.status === 'published' ? 'bg-ok-fg' : '' %><%= t.status === 'scheduled' ? 'bg-info-fg' : '' %><%= t.status === 'publishing' ? 'bg-warn-fg' : '' %><%= t.status === 'failed' ? 'bg-err-fg' : '' %>"></span>
+                  <span class="<%= t.status === 'failed' ? 'text-err-fg font-semibold' : '' %>"><%= t.status %></span>
+                  <% if (t.status === 'failed') { %>
+                    <form method="post" action="/targets/<%= t.id %>/retry" class="inline">
+                      <button class="link">retry</button>
+                    </form>
+                  <% } %>
+                </span>
+              </div>
+              <p class="text-[15px] leading-relaxed whitespace-pre-wrap break-words"><%= t.resolvedText %></p>
+              <% if (t.mediaUrl) { %>
+                <div class="mt-3">
+                  <% if (t.mediaType === 'video') { %>
+                    <video src="<%= t.mediaUrl %>" controls class="max-h-56 w-full max-w-full rounded-lg border border-border bg-surface-2"></video>
+                  <% } else { %>
+                    <img src="<%= t.mediaUrl %>" alt="" class="max-h-56 max-w-full rounded-lg border border-border bg-surface-2">
+                  <% } %>
+                </div>
               <% } %>
-            </span>
+            </div>
           <% } %>
         </div>
         <% if (targets.some(t => t.error)) { %>

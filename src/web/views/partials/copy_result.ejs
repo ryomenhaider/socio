@@ -1,7 +1,7 @@
 <% if (ok) { %>
 <div class="space-y-4">
   <% for (const r of results) { %>
-    <div class="card p-4 border-accent">
+    <div class="card p-4 border-accent" data-fill-platform="<%= r.platform %>">
       <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
         <span class="chip"><span class="dot bg-accent"></span><%= r.label %></span>
         <div class="flex items-center gap-2">
@@ -15,10 +15,29 @@
         <p class="text-xs text-faint mb-1">Description</p>
       <% } %>
       <textarea class="hidden ai-copy-data"><%= r.title ? r.title + '\n\n' + r.description : r.text %></textarea>
+      <% if (r.title) { %><input type="hidden" class="ai-copy-title" value="<%= r.title %>"><% } %>
       <p class="text-sm text-text whitespace-pre-wrap leading-relaxed"><%= r.title ? r.description : r.text %></p>
     </div>
   <% } %>
 </div>
+<script>
+  (function () {
+    document.querySelectorAll('#copy-result [data-fill-platform]').forEach((card) => {
+      const platform = card.getAttribute('data-fill-platform');
+      const text = card.querySelector('.ai-copy-data').value;
+      document.querySelectorAll('textarea[data-platform="' + platform + '"]').forEach((el) => {
+        el.value = text;
+        el.dispatchEvent(new Event('input'));
+      });
+      if (platform === 'youtube') {
+        const title = card.querySelector('.ai-copy-title').value;
+        document.querySelectorAll('input[data-platform="youtube"][data-role="title"]').forEach((el) => {
+          el.value = title;
+        });
+      }
+    });
+  })();
+</script>
 <% } else { %>
 <div class="alert alert-error"><%= error %></div>
 <% } %>

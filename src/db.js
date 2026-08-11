@@ -70,6 +70,11 @@ const cols = db.prepare('PRAGMA table_info(post_targets)').all();
 if (!cols.some((c) => c.name === 'extra')) {
   db.exec('ALTER TABLE post_targets ADD COLUMN extra TEXT');
 }
+for (const c of ['text', 'media_path', 'media_type', 'media_name']) {
+  if (!cols.some((x) => x.name === c)) {
+    db.exec(`ALTER TABLE post_targets ADD COLUMN ${c} TEXT`);
+  }
+}
 
 function getSetting(key) {
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);

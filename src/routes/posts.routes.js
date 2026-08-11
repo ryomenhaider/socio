@@ -13,7 +13,7 @@ const MSG = {
   scheduled: { ok: true, text: 'Post scheduled.' },
   error: { ok: false, text: 'Something went wrong. Check the post status.' },
   no_platform: { ok: false, text: 'Select at least one platform to post to.' },
-  empty: { ok: false, text: 'Write some text or use the AI caption generator.' },
+  empty: { ok: false, text: 'Every selected platform needs text — write some or use the AI copywriter.' },
   no_media: { ok: false, text: 'This platform requires text or media.' },
   no_consent: { ok: false, text: 'TikTok requires your consent to post (music usage confirmation).' },
   no_privacy: { ok: false, text: 'TikTok requires a privacy level. Pick one from the dropdown.' },
@@ -78,34 +78,59 @@ router.get('/compose', (req, res) => {
   });
 });
 
-router.post('/compose', upload.single('media'), async (req, res) => {
+router.post('/compose', upload.any(), async (req, res) => {
   const { text, topic, tone, length, publish_mode, scheduled_at } = req.body;
   const accountIds = [].concat(req.body.platforms || []).filter(Boolean);
+  const files = req.files || [];
+  const unlinkAll = () => {
+    for (const f of files) fs.unlink(f.path, () => {});
+  };
   let caption = (text || '').trim();
   try {
     if (!caption && (topic || '').trim()) {
       caption = await generateCaption({ topic, tone, length });
     }
-    if (!caption) return res.redirect('/compose?msg=empty');
     if (accountIds.length === 0) {
-      if (req.file) fs.unlink(req.file.path, () => {});
+      unlinkAll();
       return res.redirect('/compose?msg=no_platform');
     }
     const accounts = db
       .prepare(`SELECT * FROM accounts WHERE id IN (${accountIds.map(() => '?').join(',')})`)
       .all(...accountIds.map(Number));
     if (accounts.length === 0) {
-      if (req.file) fs.unlink(req.file.path, () => {});
+      unlinkAll();
       return res.redirect('/compose?msg=no_platform');
     }
-    const wantsTikTok = accounts.some((a) => a.platform === 'tiktok');
-    if (wantsTikTok) {
-      if (!req.body.tiktok_consent) {
-        if (req.file) fs.unlink(req.file.path, () => {});
+    const sharedFile = files.find((f) => f.fieldname === 'media');
+    const targets = accounts.map((a) => {
+      const ownFile = files.find((f) => f.fieldname === `media_${a.id}`);
+      const file = ownFile || sharedFile;
+      return {
+        account: a,
+        text: (req.body[`text_${a.id}`] || '').trim() || caption,
+        ownFile: Boolean(ownFile),
+        media: file
+          ? {
+              path: file.path,
+              type: mediaTypeFromMime(file.mimetype),
+              name: file.originalname,
+            }
+          : null,
+      };
+    });
+    if (targets.some((t) => !t.text)) {
+      unlinkAll();
+      return res.redirect('/compose?msg=empty');
+    }
+    for (const t of targets) {
+      if (t.account.platform !== 'tiktok') continue;
+      const id = t.account.id;
+      if (!req.body[`tiktok_consent_${id}`]) {
+        unlinkAll();
         return res.redirect('/compose?msg=no_consent');
       }
-      if (!req.body.tiktok_privacy_level) {
-        if (req.file) fs.unlink(req.file.path, () => {});
+      if (!req.body[`tiktok_privacy_level_${id}`]) {
+        unlinkAll();
         return res.redirect('/compose?msg=no_privacy');
       }
     }
@@ -115,52 +140,65 @@ router.post('/compose', upload.single('media'), async (req, res) => {
       )
       .run(
         caption,
-        req.file?.path || null,
-        req.file ? mediaTypeFromMime(req.file.mimetype) : null,
-        req.file?.originalname || null,
+        sharedFile?.path || null,
+        sharedFile ? mediaTypeFromMime(sharedFile.mimetype) : null,
+        sharedFile?.originalname || null,
         'scheduled'
       );
     const postId = info.lastInsertRowid;
     const when = publish_mode === 'now' ? new Date() : new Date(scheduled_at || Date.now());
     if (Number.isNaN(when.getTime())) {
       db.prepare('DELETE FROM posts WHERE id = ?').run(postId);
-      if (req.file) fs.unlink(req.file.path, () => {});
+      unlinkAll();
       return res.redirect('/compose?msg=error');
     }
     const whenIso = when.toISOString();
-    const tiktokExtra = wantsTikTok
-      ? {
-          privacy_level: req.body.tiktok_privacy_level,
-          title: req.body.tiktok_title || null,
-          disable_comment: Boolean(req.body.tiktok_disable_comment),
-          disable_duet: Boolean(req.body.tiktok_disable_duet),
-          disable_stitch: Boolean(req.body.tiktok_disable_stitch),
-          disclosure: Array.isArray(req.body.tiktok_disclosure)
-            ? req.body.tiktok_disclosure[req.body.tiktok_disclosure.length - 1]
-            : req.body.tiktok_disclosure || 'none',
-          is_aigc: Boolean(req.body.tiktok_is_aigc),
-        }
-      : null;
-    const youtubeExtra = {
-      title: req.body.youtube_title || null,
-      privacyStatus: req.body.youtube_privacy || 'public',
-    };
     const insertTarget = db.prepare(
-      `INSERT INTO post_targets (post_id, account_id, platform, scheduled_at, next_attempt_at, extra)
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO post_targets (post_id, account_id, platform, text, media_path, media_type, media_name, scheduled_at, next_attempt_at, extra)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
     const tx = db.transaction(() => {
-      for (const acc of accounts) {
-        const extra =
-          acc.platform === 'tiktok'
-            ? JSON.stringify(tiktokExtra)
-            : acc.platform === 'youtube'
-              ? JSON.stringify(youtubeExtra)
-              : null;
-        insertTarget.run(postId, acc.id, acc.platform, whenIso, whenIso, extra);
+      for (const t of targets) {
+        const a = t.account;
+        let extra = null;
+        if (a.platform === 'tiktok') {
+          extra = JSON.stringify({
+            privacy_level: req.body[`tiktok_privacy_level_${a.id}`],
+            title: req.body[`tiktok_title_${a.id}`] || null,
+            disable_comment: Boolean(req.body[`tiktok_disable_comment_${a.id}`]),
+            disable_duet: Boolean(req.body[`tiktok_disable_duet_${a.id}`]),
+            disable_stitch: Boolean(req.body[`tiktok_disable_stitch_${a.id}`]),
+            disclosure: Array.isArray(req.body[`tiktok_disclosure_${a.id}`])
+              ? req.body[`tiktok_disclosure_${a.id}`][req.body[`tiktok_disclosure_${a.id}`].length - 1]
+              : req.body[`tiktok_disclosure_${a.id}`] || 'none',
+            is_aigc: Boolean(req.body[`tiktok_is_aigc_${a.id}`]),
+          });
+        } else if (a.platform === 'youtube') {
+          extra = JSON.stringify({
+            title: req.body[`youtube_title_${a.id}`] || null,
+            privacyStatus: req.body[`youtube_privacy_${a.id}`] || 'public',
+          });
+        }
+        insertTarget.run(
+          postId,
+          a.id,
+          a.platform,
+          t.text,
+          t.media?.path || null,
+          t.media?.type || null,
+          t.media?.name || null,
+          whenIso,
+          whenIso,
+          extra
+        );
       }
     });
     tx();
+    const sharedUsed = sharedFile && targets.some((t) => !t.ownFile);
+    for (const f of files) {
+      const used = f === sharedFile ? sharedUsed : targets.some((t) => t.ownFile && t.media?.path === f.path);
+      if (!used) fs.unlink(f.path, () => {});
+    }
     if (publish_mode === 'now') {
       await runOnce();
       return res.redirect('/posts?msg=posted');
@@ -168,7 +206,7 @@ router.post('/compose', upload.single('media'), async (req, res) => {
     return res.redirect('/posts?msg=scheduled');
   } catch (err) {
     console.error('[compose]', err);
-    if (req.file) fs.unlink(req.file.path, () => {});
+    unlinkAll();
     return res.redirect('/compose?msg=error');
   }
 });
@@ -194,6 +232,14 @@ router.get('/posts', (req, res) => {
       )
       .all(p.id);
     targetsByPost.set(p.id, targets);
+  }
+  for (const p of posts) {
+    for (const t of targetsByPost.get(p.id) || []) {
+      const mediaPath = t.media_path || p.media_path;
+      t.mediaUrl = mediaPath ? `/media/${encodeURIComponent(path.basename(mediaPath))}` : null;
+      t.mediaType = t.media_type || p.media_type;
+      t.resolvedText = t.text || p.text;
+    }
   }
   res.render('pages/posts', {
     title: 'Posts',
