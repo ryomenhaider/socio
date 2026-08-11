@@ -22,11 +22,13 @@ router.get('/accounts', (req, res) => {
       };
     });
   const msg = req.query.msg || null;
+  const desc = req.query.desc || null;
   res.render('pages/accounts', {
     title: 'Accounts',
     accounts,
     platforms,
     msg,
+    desc,
     active: 'accounts',
   });
 });

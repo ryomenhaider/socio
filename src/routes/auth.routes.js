@@ -28,7 +28,11 @@ router.get('/auth/:platform/callback', async (req, res) => {
   }
   const { code, state, error } = req.query;
   if (error) {
-    return res.redirect('/accounts?msg=denied');
+    console.error(`[auth:${req.params.platform}] provider denied:`, req.query);
+    const desc = String(req.query.error_description || '').slice(0, 300);
+    return res.redirect(
+      desc ? `/accounts?msg=denied&desc=${encodeURIComponent(desc)}` : '/accounts?msg=denied'
+    );
   }
   if (!code || !state) {
     return res.redirect('/accounts?msg=error');

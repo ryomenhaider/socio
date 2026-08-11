@@ -13,7 +13,7 @@
 }; %>
 <% if (msg && MSG[msg]) { %>
   <div class="mb-4 p-3 rounded-xl <%= MSG[msg].ok ? 'bg-emerald-950 border border-emerald-800 text-emerald-300' : 'bg-red-950 border border-red-800 text-red-300' %>">
-    <%= MSG[msg].text %>
+    <%= MSG[msg].text %><% if (desc) { %><br><code class="text-xs"><%= desc %></code><% } %>
   </div>
 <% } %>
 
