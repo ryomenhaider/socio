@@ -9,11 +9,7 @@ function redirectUri() {
 }
 
 function available() {
-  return Boolean(
-    config.meta.clientId &&
-      config.meta.clientSecret &&
-      config.meta.configId
-  );
+  return Boolean(config.meta.clientId && config.meta.clientSecret);
 }
 
 function buildAuthorizeUrl(state) {
@@ -129,6 +125,7 @@ async function handleCallback(code, state) {
   const accounts = [];
   for (const page of pages) {
     accounts.push({
+      platform: 'facebook',
       displayName: `${page.name} (page)`,
       token: JSON.stringify({
         access_token: page.access_token,
@@ -140,6 +137,7 @@ async function handleCallback(code, state) {
     const ig = await fetchIgAccount(page.id, page.access_token);
     if (ig) {
       accounts.push({
+        platform: 'instagram',
         displayName: `@${ig.username || ig.id} (Instagram)`,
         token: JSON.stringify({
           access_token: page.access_token,
