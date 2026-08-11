@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · Socio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-center px-4">
+  <div class="w-full max-w-sm">
+    <div class="text-center mb-8">
+      <a href="/" class="font-bold text-2xl tracking-tight">
+        <span class="text-violet-400">socio</span><span class="text-slate-500">.dev</span>
+      </a>
+      <p class="text-sm text-slate-500 mt-2">Sign in to manage your social media scheduler.</p>
+    </div>
+    <% if (msg === 'bad_credentials') { %>
+      <div class="mb-4 p-3 rounded-xl bg-red-950 border border-red-800 text-red-300 text-sm">
+        Wrong username or password. Try again.
+      </div>
+    <% } %>
+    <form method="post" action="/login<%= next && next !== '/dashboard' ? '?next=' + encodeURIComponent(next) : '' %>"
+      class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+      <div>
+        <label for="username" class="block text-sm font-medium mb-1.5">Username</label>
+        <input id="username" name="username" type="text" required autofocus autocomplete="username"
+          class="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-2.5 focus:border-violet-500 focus:outline-none">
+      </div>
+      <div>
+        <label for="password" class="block text-sm font-medium mb-1.5">Password</label>
+        <input id="password" name="password" type="password" required autocomplete="current-password"
+          class="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-2.5 focus:border-violet-500 focus:outline-none">
+      </div>
+      <button type="submit"
+        class="w-full py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 font-semibold transition-colors">
+        Sign in
+      </button>
+    </form>
+    <p class="text-center text-xs text-slate-600 mt-6">
+      This is a private tool. <a href="/terms" class="underline">Terms</a> · <a href="/privacy" class="underline">Privacy</a>
+    </p>
+  </div>
+</body>
+</html>

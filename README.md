@@ -12,11 +12,25 @@ Lightweight social media scheduler that runs on a 1 GB RAM instance.
 
 ```bash
 cp .env.example .env   # then fill in credentials
+openssl rand -hex 32   # put the output in SESSION_SECRET
 npm install
-npm start              # http://localhost:3000
+node src/scripts/users.js add yourname      # create your login (first user)
+npm start              # http://localhost:3000 → sign in
 ```
 
-Pages: `/` dashboard · `/compose` write a post · `/posts` history · `/accounts` connect · `/settings` OpenRouter key.
+Pages: `/` landing (public) · `/login` sign in · `/dashboard` stats · `/compose` write a post · `/posts` history · `/accounts` connect · `/settings` OpenRouter key.
+
+## Access control
+
+The app is invite-only: every page behind `/login` requires a session, and only users you create can sign in.
+
+```bash
+npm run add-user yourname          # prompts-free: creates user (generates a password if you omit it)
+npm run remove-user yourname
+npm run list-users
+```
+
+Passwords are stored as salted scrypt hashes; sessions are signed HMAC cookies that last 30 days. Uploaded media is served only to authenticated users. Set a strong `SESSION_SECRET` in `.env` (the install script generates one automatically on the server).
 
 ## Platform support
 
@@ -109,6 +123,7 @@ Domain: `vektorlabs.xyz` (A record → `141.148.15.111`).
 5. **Configure:**
    ```bash
    vim /home/ubuntu/socio/.env   # paste API credentials
+   cd /home/ubuntu/socio && node src/scripts/users.js add you  # create your login
    sudo systemctl restart socio
    ```
 6. **OAuth redirect URIs** (add in each developer console):

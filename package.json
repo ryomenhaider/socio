@@ -6,7 +6,10 @@
   "type": "commonjs",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "add-user": "node src/scripts/users.js add",
+    "remove-user": "node src/scripts/users.js remove",
+    "list-users": "node src/scripts/users.js list"
   },
   "engines": {
     "node": ">=20"
