@@ -40,7 +40,13 @@
         <% } %>
       </a>
     <% } %>
-  </nav>
+      <a href="/docs" onclick="closeDrawer()" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors text-muted hover:text-text hover:bg-surface-2">
+        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.6a2 2 0 0 1 1.4.6l3.4 3.4a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2z"/>
+        </svg>
+        Documentation
+      </a>
+    </nav>
   <% if (user) { %>
     <div class="px-3 py-4 border-t border-border">
       <div class="px-3">
@@ -87,6 +93,14 @@
         </a>
       <% } %>
     </nav>
+    <div class="px-3 pb-4">
+      <a href="/docs" class="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-muted hover:text-text hover:bg-surface-2 transition-colors">
+        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.6a2 2 0 0 1 1.4.6l3.4 3.4a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2z"/>
+        </svg>
+        Documentation
+      </a>
+    </div>
     <% if (user) { %>
       <div class="px-3 py-4 border-t border-border">
         <div class="flex items-center justify-between px-3">

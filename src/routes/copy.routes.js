@@ -5,6 +5,10 @@ const { fetchCreatorInfo } = require('../platforms/tiktok');
 
 const router = express.Router();
 
+router.get('/docs', (req, res) => {
+  res.render('pages/docs', { title: 'Documentation', active: 'docs' });
+});
+
 router.post('/api/copy', async (req, res) => {
   const { topic, tone, length, model } = req.body;
   const platforms = [].concat(req.body.platforms || []).filter(Boolean);
