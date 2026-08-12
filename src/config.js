@@ -3,10 +3,16 @@ require('dotenv').config();
 
 const dataDir = path.resolve(process.env.DATA_DIR || './data');
 
+if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
+  throw new Error(
+    'SESSION_SECRET is required and must be at least 32 characters. Generate one with: openssl rand -hex 32'
+  );
+}
+
 const config = {
   port: parseInt(process.env.PORT || '3000', 10),
   baseUrl: (process.env.BASE_URL || 'http://localhost:3000').replace(/\/+$/, ''),
-  sessionSecret: process.env.SESSION_SECRET || 'dev-only-change-me',
+  sessionSecret: process.env.SESSION_SECRET,
   dataDir,
   mediaDir: path.join(dataDir, 'media'),
   dbPath: path.join(dataDir, 'socio.db'),
