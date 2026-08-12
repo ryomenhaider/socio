@@ -5,6 +5,7 @@ Lightweight social media scheduler that runs on a 1 GB RAM instance.
 - **Node.js + Express + SQLite** (better-sqlite3, WAL mode) — no Redis, no Postgres
 - **EJS + HTMX + Tailwind + Alpine** — server-rendered UI, no build step
 - **OpenRouter AI captions** — pick a tone, length and topic, get a caption
+- **AI-checked feedback** — `/feedback` scores your message for usefulness before emailing it to the developer
 - Compose once, tick the platforms you want, post now or schedule
 - In-process scheduler (polls every 30 s, retries with backoff, no cron needed)
 
@@ -18,7 +19,7 @@ node src/scripts/users.js add yourname      # create your login (first user)
 npm start              # http://localhost:3000 → sign in
 ```
 
-Pages: `/` landing (public) · `/login` sign in · `/dashboard` stats · `/compose` write a post · `/posts` history · `/accounts` connect · `/settings` OpenRouter key.
+Pages: `/` landing (public) · `/login` sign in · `/dashboard` stats · `/compose` write a post · `/posts` history · `/accounts` connect · `/feedback` send a suggestion/report · `/settings` OpenRouter key.
 
 ## Access control
 
@@ -98,6 +99,24 @@ Caveats (TikTok policy, not code):
 
 The model is configurable in `/settings` (default `openai/gpt-4o-mini`; free models like `meta-llama/llama-3.3-70b-instruct` work too).
 
+## Setup: Email for feedback
+
+`/feedback` collects recommendations, suggestions and bug reports. Before sending, the OpenRouter AI scores the message (0–100) for whether it's genuinely useful feedback about socio; messages scoring below 60 are blocked with the AI's reasoning unless the sender overrides.
+
+Delivery (to `haiderali.dev95@gmail.com`, override with `SOCIO_FEEDBACK_EMAIL`):
+
+1. **Recommended — SMTP:** add to `.env` and restart:
+   ```
+   MAIL_HOST=smtp.gmail.com
+   MAIL_PORT=465
+   MAIL_USER=you@gmail.com
+   MAIL_PASS=<App Password: Google Account → Security → 2-Step Verification → App passwords>
+   MAIL_FROM=Socio Feedback
+   ```
+2. **Fallback — FormSubmit:** used automatically when SMTP is unset. Requires clicking the one-time activation link FormSubmit emails to the recipient (check spam) before deliveries start.
+
+An optional "Your email" field is used as the `Reply-To` so you can answer the sender directly.
+
 ## Deploying on a 1 GB VPS (Oracle Cloud free instance)
 
 Domain: `vektorlabs.xyz` (A record → `141.148.15.111`).
@@ -117,7 +136,7 @@ Domain: `vektorlabs.xyz` (A record → `141.148.15.111`).
    ```
 5. **Configure:**
    ```bash
-   vim /home/ubuntu/socio/.env   # paste API credentials
+   vim /home/ubuntu/socio/.env   # paste API credentials (+ MAIL_* for feedback email)
    cd /home/ubuntu/socio && node src/scripts/users.js add you  # create your login
    sudo systemctl restart socio
    ```
