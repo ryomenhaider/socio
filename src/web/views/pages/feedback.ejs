@@ -25,6 +25,12 @@
         AI scoring is off (OPENROUTER_API_KEY is not set) — messages will be sent without a score.
       </p>
     <% } %>
+    <% if (!mailReady) { %>
+      <p class="text-xs text-warn-fg bg-warn-bg rounded-md px-3 py-2">
+        SMTP is not configured (MAIL_HOST / MAIL_USER / MAIL_PASS missing) — messages go through FormSubmit,
+        which needs its one-time activation link clicked in the recipient's inbox (check spam).
+      </p>
+    <% } %>
     <div class="flex items-center justify-between gap-3">
       <p class="text-xs text-faint">Sent to <%= FEEDBACK_TO %></p>
       <button class="btn btn-primary" <% if (!aiReady) { %>hx-vals='{"force": "1"}'<% } %>>Check & send</button>
