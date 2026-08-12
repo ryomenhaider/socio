@@ -1,0 +1,33 @@
+<% if (ok) { %>
+<div class="card p-4 border-accent space-y-2">
+  <p class="text-sm text-text font-medium">Sent</p>
+  <% if (score !== null && score !== undefined) { %>
+    <p class="text-sm text-muted">AI usefulness score: <span class="font-semibold text-text"><%= score %>/100</span><% if (reason) { %> — <%= reason %><% } %></p>
+  <% } %>
+  <p class="text-xs text-faint">Thanks — your message is on its way to <%= FEEDBACK_TO %>.</p>
+</div>
+<% } else if (lowScore) { %>
+<div class="card p-4 border-warn space-y-3">
+  <p class="text-sm font-medium text-warn-fg">The AI doesn't think this is useful feedback (score <%= score %>/100)</p>
+  <% if (reason) { %><p class="text-xs text-muted"><%= reason %></p><% } %>
+  <p class="text-xs text-faint">Nothing has been sent yet.</p>
+  <form hx-post="/feedback/submit" hx-target="#feedback-result" hx-swap="innerHTML">
+    <input type="hidden" name="message" value="<%= message %>">
+    <input type="hidden" name="email" value="<%= email %>">
+    <input type="hidden" name="force" value="1">
+    <button class="btn btn-ghost btn-sm">Send anyway</button>
+  </form>
+</div>
+<% } else if (error) { %>
+<div class="card p-4 border-err space-y-3">
+  <p class="text-sm text-err-fg"><%= error %></p>
+  <% if (score === null || force) { %>
+    <form hx-post="/feedback/submit" hx-target="#feedback-result" hx-swap="innerHTML">
+      <input type="hidden" name="message" value="<%= message %>">
+      <input type="hidden" name="email" value="<%= email %>">
+      <input type="hidden" name="force" value="1">
+      <button class="btn btn-ghost btn-sm">Try sending anyway</button>
+    </form>
+  <% } %>
+</div>
+<% } %>

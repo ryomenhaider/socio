@@ -42,7 +42,7 @@
     <h3 class="font-display font-semibold text-sm mt-5 mb-2">Meta — Facebook + Instagram</h3>
     <ul class="text-sm text-muted space-y-1.5 list-disc pl-5 leading-relaxed">
       <li>One app at <code class="font-mono text-xs">developers.facebook.com/apps</code> covers both platforms, with the products <span class="text-text">Facebook Login for Business</span> and <span class="text-text">Instagram Graph API</span>.</li>
-      <li><code class="font-mono text-xs">META_CONFIG_ID</code>: Facebook Login for Business → Configurations → Create configuration → access token type <span class="text-text">User access token</span> → assets: Pages and Instagram → permissions: <code class="font-mono text-xs">pages_show_list</code>, <code class="font-mono text-xs">pages_manage_posts</code>, <code class="font-mono text-xs">pages_read_engagement</code>, <code class="font-mono text-xs">instagram_basic</code>, <code class="font-mono text-xs">instagram_content_publish</code>.</li>
+      <li>Set <code class="font-mono text-xs">META_CLIENT_ID</code> and <code class="font-mono text-xs">META_CLIENT_SECRET</code> in <code class="font-mono text-xs">.env</code>. No Facebook Login for Business configuration is needed — permissions (<code class="font-mono text-xs">pages_show_list</code>, <code class="font-mono text-xs">pages_manage_posts</code>, <code class="font-mono text-xs">pages_read_engagement</code>, <code class="font-mono text-xs">instagram_basic</code>, <code class="font-mono text-xs">instagram_content_publish</code>) are requested at connect time.</li>
       <li>You must be an <span class="text-text">admin</span> of the Facebook page(s).</li>
       <li>Instagram must be a <span class="text-text">business or creator account</span> linked to the page.</li>
       <li>Redirect URI: <code class="font-mono text-xs"><%= baseUrl %>/auth/meta/callback</code>. One connection imports every page you admin plus each linked Instagram business account.</li>
@@ -194,7 +194,6 @@
         <tr><td class="py-2.5 pr-4 font-mono text-xs">OPENROUTER_MODEL</td><td class="py-2.5">Default AI model (default <code class="font-mono text-xs">openai/gpt-4o-mini</code>)</td></tr>
         <tr><td class="py-2.5 pr-4 font-mono text-xs">LINKEDIN_CLIENT_ID / _SECRET</td><td class="py-2.5">LinkedIn OAuth app</td></tr>
         <tr><td class="py-2.5 pr-4 font-mono text-xs">META_CLIENT_ID / _SECRET</td><td class="py-2.5">Meta (Facebook + Instagram) app</td></tr>
-        <tr><td class="py-2.5 pr-4 font-mono text-xs">META_CONFIG_ID</td><td class="py-2.5">Facebook Login for Business configuration id (user access token)</td></tr>
         <tr><td class="py-2.5 pr-4 font-mono text-xs">GOOGLE_CLIENT_ID / _SECRET</td><td class="py-2.5">Google Cloud OAuth client (YouTube)</td></tr>
         <tr><td class="py-2.5 pr-4 font-mono text-xs">TIKTOK_CLIENT_KEY / _SECRET</td><td class="py-2.5">TikTok developer app</td></tr>
       </tbody>

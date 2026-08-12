@@ -105,7 +105,9 @@ function buildPrompt({ topic, tone, length, platform }) {
   }
 }
 
-async function callLLM({ key, model, prompt, maxTokens }) {
+const FEEDBACK_THRESHOLD = 60;
+
+async function callLLM({ key, model, prompt, maxTokens, temperature }) {
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     signal: AbortSignal.timeout(30000),
@@ -116,7 +118,7 @@ async function callLLM({ key, model, prompt, maxTokens }) {
     body: JSON.stringify({
       model,
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.9,
+      temperature: temperature === undefined ? 0.9 : temperature,
       max_tokens: maxTokens,
     }),
   });
@@ -182,4 +184,47 @@ async function generateCaption({ topic, tone, length }) {
   });
 }
 
-module.exports = { AI_MODELS, generateCopy, generateCaption, hasKey, getModel };
+async function scoreFeedback(message) {
+  const key = getKey();
+  if (!key) {
+    throw new Error(
+      'OpenRouter API key is not configured. Add OPENROUTER_API_KEY to .env and restart the service.'
+    );
+  }
+  const prompt = [
+    'You are a strict quality gate for the feedback form of "Socio", a self-hosted social media scheduler for LinkedIn, Facebook, Instagram, YouTube and TikTok (post scheduling, AI captions, account connections via OAuth).',
+    'A user wrote this message to the developer:',
+    '<message>',
+    message,
+    '</message>',
+    'Decide whether the message is genuinely useful feedback about socio: a concrete recommendation, suggestion, bug report or feature request. It is NOT useful if it is spam, gibberish, unrelated content, or empty praise with no actionable value.',
+    'Reply with JSON only, exactly this shape: {"score": <integer 0-100>, "reason": "<one short sentence>"}',
+    'score = 0-100: how useful and actionable the message is as feedback for improving socio.',
+  ].join('\n');
+  const text = await callLLM({
+    key,
+    model: getModel(),
+    prompt,
+    maxTokens: 300,
+    temperature: 0.2,
+  });
+  const cleaned = String(text).replace(/```(?:json)?/gi, '').trim();
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start === -1 || end === -1) {
+    throw new Error('AI scoring returned an unparseable response.');
+  }
+  let data;
+  try {
+    data = JSON.parse(cleaned.slice(start, end + 1));
+  } catch {
+    throw new Error('AI scoring returned an unparseable response.');
+  }
+  const score = Math.round(Number(data.score));
+  if (!Number.isFinite(score)) {
+    throw new Error('AI scoring returned no usable score.');
+  }
+  return { score: Math.max(0, Math.min(100, score)), reason: String(data.reason || '').trim() };
+}
+
+module.exports = { AI_MODELS, generateCopy, generateCaption, hasKey, getModel, scoreFeedback, FEEDBACK_THRESHOLD };
