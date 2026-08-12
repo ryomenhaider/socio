@@ -1,0 +1,247 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<div class="mb-10">
+  <p class="micro mb-1.5">Reference</p>
+  <h1 class="font-display text-3xl font-bold tracking-tight">Documentation</h1>
+  <p class="text-xs text-faint mt-2">Everything about socio — accounts, posting, the AI copywriter, and configuration.</p>
+</div>
+
+<div class="max-w-3xl space-y-6">
+  <section class="card p-6">
+    <h2 class="font-display font-semibold text-lg tracking-tight mb-3">Overview</h2>
+    <p class="text-sm text-muted leading-relaxed">
+      socio is a lightweight social media scheduler that publishes to LinkedIn, Facebook, Instagram, YouTube and TikTok
+      from a single compose form. It runs on a 1&nbsp;GB VPS with Node.js, Express and SQLite (WAL mode) — no Redis,
+      no Postgres, no build step (EJS + HTMX + Alpine + Tailwind on the client).
+    </p>
+    <ul class="mt-4 space-y-2 text-sm text-muted list-disc pl-5 leading-relaxed">
+      <li><span class="text-text">Compose once, dispatch per platform</span> — every selected account gets its own text and its own media file, with the shared post text/media as fallback.</li>
+      <li><span class="text-text">AI copywriter</span> — one prompt generates tailored copy for each platform (LinkedIn post, YouTube title + description, TikTok caption, …).</li>
+      <li><span class="text-text">Schedule or publish now</span> — per-account delivery with automatic retries and backoff.</li>
+      <li><span class="text-text">OAuth connections</span> for LinkedIn, Meta (Facebook + Instagram), YouTube and TikTok, with token refresh handled automatically.</li>
+    </ul>
+  </section>
+
+  <section class="card p-6">
+    <h2 class="font-display font-semibold text-lg tracking-tight mb-3">Connecting accounts</h2>
+    <p class="text-sm text-muted leading-relaxed mb-4">
+      Open <span class="text-text">Accounts</span> in the sidebar and click <span class="text-text">Connect</span> for a platform.
+      Each platform needs credentials in the server's <code class="font-mono text-xs text-muted">.env</code> file
+      (see the <a href="#configuration" class="link">Configuration reference</a> below). Credentials can't be entered in the UI —
+      they come from <code class="font-mono text-xs text-muted">.env</code>, and changes need a service restart.
+    </p>
+
+    <h3 class="font-display font-semibold text-sm mt-5 mb-2">LinkedIn</h3>
+    <ul class="text-sm text-muted space-y-1.5 list-disc pl-5 leading-relaxed">
+      <li>Create an app at <code class="font-mono text-xs">linkedin.com/developers/apps</code> and add the <span class="text-text">Share on LinkedIn</span> product (grants <code class="font-mono text-xs">w_member_social</code>).</li>
+      <li>OAuth redirect URI must be <code class="font-mono text-xs"><%= baseUrl %>/auth/linkedin/callback</code>.</li>
+      <li>Set <code class="font-mono text-xs">LINKEDIN_CLIENT_ID</code> and <code class="font-mono text-xs">LINKEDIN_CLIENT_SECRET</code> in <code class="font-mono text-xs">.env</code>.</li>
+    </ul>
+
+    <h3 class="font-display font-semibold text-sm mt-5 mb-2">Meta — Facebook + Instagram</h3>
+    <ul class="text-sm text-muted space-y-1.5 list-disc pl-5 leading-relaxed">
+      <li>One app at <code class="font-mono text-xs">developers.facebook.com/apps</code> covers both platforms, with the products <span class="text-text">Facebook Login for Business</span> and <span class="text-text">Instagram Graph API</span>.</li>
+      <li><code class="font-mono text-xs">META_CONFIG_ID</code>: Facebook Login for Business → Configurations → Create configuration → access token type <span class="text-text">User access token</span> → assets: Pages and Instagram → permissions: <code class="font-mono text-xs">pages_show_list</code>, <code class="font-mono text-xs">pages_manage_posts</code>, <code class="font-mono text-xs">pages_read_engagement</code>, <code class="font-mono text-xs">instagram_basic</code>, <code class="font-mono text-xs">instagram_content_publish</code>.</li>
+      <li>You must be an <span class="text-text">admin</span> of the Facebook page(s).</li>
+      <li>Instagram must be a <span class="text-text">business or creator account</span> linked to the page.</li>
+      <li>Redirect URI: <code class="font-mono text-xs"><%= baseUrl %>/auth/meta/callback</code>. One connection imports every page you admin plus each linked Instagram business account.</li>
+    </ul>
+
+    <h3 class="font-display font-semibold text-sm mt-5 mb-2">YouTube</h3>
+    <ul class="text-sm text-muted space-y-1.5 list-disc pl-5 leading-relaxed">
+      <li>Google Cloud project with the <span class="text-text">YouTube Data API v3</span> enabled, plus an external OAuth consent screen.</li>
+      <li>Redirect URI: <code class="font-mono text-xs"><%= baseUrl %>/auth/youtube/callback</code>.</li>
+      <li>Set <code class="font-mono text-xs">GOOGLE_CLIENT_ID</code> and <code class="font-mono text-xs">GOOGLE_CLIENT_SECRET</code> in <code class="font-mono text-xs">.env</code>.</li>
+    </ul>
+
+    <h3 class="font-display font-semibold text-sm mt-5 mb-2">TikTok</h3>
+    <ul class="text-sm text-muted space-y-1.5 list-disc pl-5 leading-relaxed">
+      <li>App at <code class="font-mono text-xs">developers.tiktok.com</code> with the <span class="text-text">Content Posting API</span> + Direct Post.</li>
+      <li>Redirect URI must be <span class="text-text">HTTPS</span> (no query params): <code class="font-mono text-xs"><%= baseUrl %>/auth/tiktok/callback</code>.</li>
+      <li>Set <code class="font-mono text-xs">TIKTOK_CLIENT_KEY</code> and <code class="font-mono text-xs">TIKTOK_CLIENT_SECRET</code> in <code class="font-mono text-xs">.env</code>.</li>
+      <li>Until your app passes TikTok's audit, posts are restricted to <span class="text-text">private view (SELF_ONLY)</span> with a small active-user cap.</li>
+    </ul>
+
+    <div class="alert alert-warn mt-5">
+      Changing <code class="font-mono text-xs">BASE_URL</code> after connecting accounts invalidates the registered redirect URIs —
+      re-register them in each developer console and re-connect accounts.
+    </div>
+  </section>
+
+  <section class="card p-6">
+    <h2 class="font-display font-semibold text-lg tracking-tight mb-3">Composing posts</h2>
+    <p class="text-sm text-muted leading-relaxed mb-4">
+      The compose form has a <span class="text-text">shared</span> post text and media at the top. Checking an account in the
+      <span class="text-text">Post to</span> list expands its own editor card. Anything you leave empty in the card falls back to the
+      shared text/media — so a single-platform post still works in one step, while multi-platform posts can carry completely
+      different content per platform.
+    </p>
+
+    <h3 class="font-display font-semibold text-sm mb-2">Media formats</h3>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border">
+          <th class="text-left py-2 pr-4 font-medium text-muted">Platform</th>
+          <th class="text-left py-2 pr-4 font-medium text-muted">Accepted media</th>
+          <th class="text-left py-2 font-medium text-muted">Notes</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        <tr><td class="py-2.5 pr-4">LinkedIn</td><td class="py-2.5 pr-4">Image (1200×627 recommended)</td><td class="py-2.5">Text-only posts work too</td></tr>
+        <tr><td class="py-2.5 pr-4">Facebook</td><td class="py-2.5 pr-4">Image or video</td><td class="py-2.5">—</td></tr>
+        <tr><td class="py-2.5 pr-4">Instagram</td><td class="py-2.5 pr-4">Image or video (1080×1080 square or 4:5)</td><td class="py-2.5 text-warn-fg">Media is required</td></tr>
+        <tr><td class="py-2.5 pr-4">YouTube</td><td class="py-2.5 pr-4">Video file (mp4)</td><td class="py-2.5 text-warn-fg">Video is required</td></tr>
+        <tr><td class="py-2.5 pr-4">TikTok</td><td class="py-2.5 pr-4">Video file (mp4)</td><td class="py-2.5 text-warn-fg">Video is required</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="font-display font-semibold text-sm mt-5 mb-2">Character limits</h3>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border">
+          <th class="text-left py-2 pr-4 font-medium text-muted">Platform</th>
+          <th class="text-left py-2 font-medium text-muted">Limit</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        <tr><td class="py-2.5 pr-4">LinkedIn</td><td class="py-2.5">3,000</td></tr>
+        <tr><td class="py-2.5 pr-4">Instagram / TikTok</td><td class="py-2.5">2,200</td></tr>
+        <tr><td class="py-2.5 pr-4">YouTube</td><td class="py-2.5">5,000</td></tr>
+        <tr><td class="py-2.5 pr-4">Facebook</td><td class="py-2.5">~63,000</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="font-display font-semibold text-sm mt-5 mb-2">Per-platform extras</h3>
+    <ul class="text-sm text-muted space-y-1.5 list-disc pl-5 leading-relaxed">
+      <li><span class="text-text">YouTube:</span> video title and visibility (public / unlisted / private) per account.</li>
+      <li><span class="text-text">TikTok:</span> privacy level (private until audit passes), caption title, comment/duet/stitch toggles, AI-generated-content flag, branded-content disclosure and the music usage confirmation.</li>
+    </ul>
+  </section>
+
+  <section class="card p-6">
+    <h2 class="font-display font-semibold text-lg tracking-tight mb-3">AI copywriter</h2>
+    <p class="text-sm text-muted leading-relaxed mb-4">
+      The AI copywriter turns one prompt into platform-specific copy. Tick the platforms you need, pick a tone, length and model,
+      and it generates a tailored piece for each one:
+    </p>
+    <ul class="text-sm text-muted space-y-1.5 list-disc pl-5 leading-relaxed">
+      <li><span class="text-text">LinkedIn</span> — a thought-leadership post (LinkedIn has no captions — the text is the post), short paragraphs, ≤3 hashtags.</li>
+      <li><span class="text-text">Facebook</span> — a conversational caption with hashtags.</li>
+      <li><span class="text-text">Instagram</span> — a first-person caption, one line per sentence, with hashtags.</li>
+      <li><span class="text-text">YouTube</span> — a click-worthy title (under 100 chars) plus a description.</li>
+      <li><span class="text-text">TikTok</span> — a short hook-first caption with hashtags.</li>
+    </ul>
+    <div class="mt-4 space-y-2 text-sm text-muted leading-relaxed">
+      <p>• Results <span class="text-text">auto-fill</span> the matching account cards (the YouTube title goes into the title field). Each card also has <span class="text-text">Copy</span> and <span class="text-text">Use this copy</span> buttons — the latter drops the text into the shared post text field.</p>
+      <p>• Your model choice is saved and stays selected next time.</p>
+      <p>• Requires <code class="font-mono text-xs">OPENROUTER_API_KEY</code> in <code class="font-mono text-xs">.env</code>. The default model is <code class="font-mono text-xs">openai/gpt-4o-mini</code> (set <code class="font-mono text-xs">OPENROUTER_MODEL</code> to override the default).</p>
+      <p>• You can generate copy before connecting any accounts — platforms are ticked independently of the <span class="text-text">Post to</span> list.</p>
+    </div>
+  </section>
+
+  <section class="card p-6">
+    <h2 class="font-display font-semibold text-lg tracking-tight mb-3">Scheduling &amp; delivery</h2>
+    <ul class="text-sm text-muted space-y-2 list-disc pl-5 leading-relaxed">
+      <li><span class="text-text">Publish now</span> dispatches immediately; <span class="text-text">Schedule</span> picks a future time (each target stores its own time).</li>
+      <li>Delivery runs per target (per account), so one post can partially succeed.</li>
+      <li>Failures retry automatically up to <span class="text-text">3 attempts</span> with exponential backoff (2, 4, 8… minutes, capped at 60).</li>
+      <li>Expired or invalid tokens are refreshed automatically when the platform supports it; otherwise the target fails with a re-connect message.</li>
+      <li>TikTok videos can take a few minutes to appear on the profile after publishing.</li>
+    </ul>
+  </section>
+
+  <section class="card p-6">
+    <h2 class="font-display font-semibold text-lg tracking-tight mb-3">Posts &amp; statuses</h2>
+    <p class="text-sm text-muted leading-relaxed mb-4">
+      The Posts page shows each post as one card per target account, with that account's own text and media. Statuses:
+    </p>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border">
+          <th class="text-left py-2 pr-4 font-medium text-muted">Status</th>
+          <th class="text-left py-2 font-medium text-muted">Meaning</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        <tr><td class="py-2.5 pr-4">scheduled</td><td class="py-2.5">Waiting for its delivery time (or retrying after a failure)</td></tr>
+        <tr><td class="py-2.5 pr-4">publishing</td><td class="py-2.5">Being dispatched right now</td></tr>
+        <tr><td class="py-2.5 pr-4">published</td><td class="py-2.5">The platform accepted it</td></tr>
+        <tr><td class="py-2.5 pr-4">failed</td><td class="py-2.5">Gave up after 3 attempts — hit <span class="link">retry</span> on the chip to try again</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card p-6" id="configuration">
+    <h2 class="font-display font-semibold text-lg tracking-tight mb-3">Configuration reference</h2>
+    <p class="text-sm text-muted leading-relaxed mb-4">
+      All configuration lives in <code class="font-mono text-xs">.env</code> next to the server (a template ships as
+      <code class="font-mono text-xs">.env.example</code>). Changes require restarting the socio service.
+    </p>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border">
+          <th class="text-left py-2 pr-4 font-medium text-muted">Variable</th>
+          <th class="text-left py-2 font-medium text-muted">Purpose</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        <tr><td class="py-2.5 pr-4 font-mono text-xs">BASE_URL</td><td class="py-2.5">Public URL; must match the OAuth redirect URIs registered in each developer console</td></tr>
+        <tr><td class="py-2.5 pr-4 font-mono text-xs">PORT</td><td class="py-2.5">HTTP port (default 3000)</td></tr>
+        <tr><td class="py-2.5 pr-4 font-mono text-xs">SESSION_SECRET</td><td class="py-2.5">Signs login session cookies — generate with <code class="font-mono text-xs">openssl rand -hex 32</code></td></tr>
+        <tr><td class="py-2.5 pr-4 font-mono text-xs">DATA_DIR</td><td class="py-2.5">SQLite database + uploaded media live here (default <code class="font-mono text-xs">./data</code>)</td></tr>
+        <tr><td class="py-2.5 pr-4 font-mono text-xs">OPENROUTER_API_KEY</td><td class="py-2.5">API key for the AI copywriter (openrouter.ai/keys)</td></tr>
+        <tr><td class="py-2.5 pr-4 font-mono text-xs">OPENROUTER_MODEL</td><td class="py-2.5">Default AI model (default <code class="font-mono text-xs">openai/gpt-4o-mini</code>)</td></tr>
+        <tr><td class="py-2.5 pr-4 font-mono text-xs">LINKEDIN_CLIENT_ID / _SECRET</td><td class="py-2.5">LinkedIn OAuth app</td></tr>
+        <tr><td class="py-2.5 pr-4 font-mono text-xs">META_CLIENT_ID / _SECRET</td><td class="py-2.5">Meta (Facebook + Instagram) app</td></tr>
+        <tr><td class="py-2.5 pr-4 font-mono text-xs">META_CONFIG_ID</td><td class="py-2.5">Facebook Login for Business configuration id (user access token)</td></tr>
+        <tr><td class="py-2.5 pr-4 font-mono text-xs">GOOGLE_CLIENT_ID / _SECRET</td><td class="py-2.5">Google Cloud OAuth client (YouTube)</td></tr>
+        <tr><td class="py-2.5 pr-4 font-mono text-xs">TIKTOK_CLIENT_KEY / _SECRET</td><td class="py-2.5">TikTok developer app</td></tr>
+      </tbody>
+    </table>
+    <p class="text-sm text-muted leading-relaxed mt-4">
+      Fresh deploy: <code class="font-mono text-xs">bash deploy/install.sh /home/ubuntu/socio &lt;domain&gt;</code> sets up
+      Node, nginx, TLS and a systemd service — see the README for the full guide.
+    </p>
+  </section>
+
+  <section class="card p-6">
+    <h2 class="font-display font-semibold text-lg tracking-tight mb-3">Troubleshooting</h2>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border">
+          <th class="text-left py-2 pr-4 font-medium text-muted">Symptom</th>
+          <th class="text-left py-2 font-medium text-muted">Cause &amp; fix</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        <tr>
+          <td class="py-2.5 pr-4">"Token expired — re-connect the account"</td>
+          <td class="py-2.5">The OAuth token can't be refreshed. Open <span class="text-text">Accounts</span> and connect again.</td>
+        </tr>
+        <tr>
+          <td class="py-2.5 pr-4">A platform shows "soon" instead of ready</td>
+          <td class="py-2.5">Its credentials are missing from <code class="font-mono text-xs">.env</code> — add them and restart the service.</td>
+        </tr>
+        <tr>
+          <td class="py-2.5 pr-4">"OpenRouter key is not configured"</td>
+          <td class="py-2.5">Set <code class="font-mono text-xs">OPENROUTER_API_KEY</code> in <code class="font-mono text-xs">.env</code> and restart.</td>
+        </tr>
+        <tr>
+          <td class="py-2.5 pr-4">Instagram post fails</td>
+          <td class="py-2.5">Account must be a business/creator account and media is required for every post.</td>
+        </tr>
+        <tr>
+          <td class="py-2.5 pr-4">TikTok only posts as private</td>
+          <td class="py-2.5">Your app hasn't passed TikTok's audit yet — that's an API restriction, not a bug.</td>
+        </tr>
+        <tr>
+          <td class="py-2.5 pr-4">OAuth "redirect_uri_mismatch"</td>
+          <td class="py-2.5">The redirect URI in the developer console doesn't match <code class="font-mono text-xs"><%= baseUrl %>/auth/&lt;platform&gt;/callback</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<%- include('../partials/foot') %>

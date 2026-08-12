@@ -8,6 +8,22 @@ function redirectUri() {
   return `${config.baseUrl}/auth/meta/callback`;
 }
 
+function isNetworkError(err) {
+  return (
+    err instanceof TypeError ||
+    ['ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND', 'ECONNREFUSED'].includes(err?.cause?.code)
+  );
+}
+
+function wrapNetworkError(err) {
+  if (isNetworkError(err)) {
+    return new Error(
+      'Network error reaching Meta (graph.facebook.com). Check your internet connection and try again.'
+    );
+  }
+  return err;
+}
+
 function available() {
   return Boolean(config.meta.clientId && config.meta.clientSecret);
 }
@@ -26,9 +42,14 @@ function buildAuthorizeUrl(state) {
 
 async function graphGet(path, params) {
   const qs = new URLSearchParams(params);
-  const res = await fetch(`${GRAPH}/${VERSION}/${path}?${qs.toString()}`, {
-    signal: AbortSignal.timeout(30000),
-  });
+  let res;
+  try {
+    res = await fetch(`${GRAPH}/${VERSION}/${path}?${qs.toString()}`, {
+      signal: AbortSignal.timeout(30000),
+    });
+  } catch (err) {
+    throw wrapNetworkError(err);
+  }
   const data = await res.json().catch(() => ({}));
   if (data.error) {
     throw new Error(`Meta error: ${data.error.message || JSON.stringify(data.error)}`);
@@ -37,12 +58,17 @@ async function graphGet(path, params) {
 }
 
 async function graphPost(path, params) {
-  const res = await fetch(`${GRAPH}/${VERSION}/${path}`, {
-    method: 'POST',
-    signal: AbortSignal.timeout(30000),
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams(params),
-  });
+  let res;
+  try {
+    res = await fetch(`${GRAPH}/${VERSION}/${path}`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(30000),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(params),
+    });
+  } catch (err) {
+    throw wrapNetworkError(err);
+  }
   const data = await res.json().catch(() => ({}));
   if (data.error) {
     throw new Error(`Meta error: ${data.error.message || JSON.stringify(data.error)}`);
@@ -105,6 +131,14 @@ async function fetchPages(userToken) {
   return pages;
 }
 
+async function debugToken(userToken) {
+  const data = await graphGet('debug_token', {
+    input_token: userToken,
+    access_token: `${config.meta.clientId}|${config.meta.clientSecret}`,
+  });
+  return data.data || {};
+}
+
 async function fetchIgAccount(pageId, pageToken) {
   const data = await graphGet(pageId, {
     fields: 'instagram_business_account',
@@ -118,9 +152,29 @@ async function handleCallback(code, state) {
   const long = await longLived(short.access_token);
   const userToken = long.access_token;
   const expiresAt = long.expires_in ? Date.now() + long.expires_in * 1000 : null;
-  const pages = await fetchPages(userToken);
+  let pages;
+  try {
+    pages = await fetchPages(userToken);
+  } catch (err) {
+    throw wrapNetworkError(err);
+  }
   if (pages.length === 0) {
-    throw new Error('No Facebook pages found for this account. You must be an admin of at least one page.');
+    let detail =
+      'Your Facebook account must be an admin of at least one page, and that page must be linked to the Instagram business account you want to post to.';
+    try {
+      const info = await debugToken(userToken);
+      const scopes = info.granted_scopes || info.scopes || [];
+      const needed = ['pages_show_list', 'pages_manage_posts', 'instagram_basic', 'instagram_content_publish'];
+      const missing = needed.filter((s) => !scopes.includes(s));
+      if (missing.length > 0) {
+        detail = `Your Meta token is missing permissions: ${missing.join(', ')} (granted: ${
+          scopes.join(', ') || 'none'
+        }). Recreate the Facebook Login for Business configuration with asset type "Pages" and the pages_* + instagram_* permissions, then re-connect.`;
+      }
+    } catch (e) {
+      /* debug_token is best-effort; keep the generic message */
+    }
+    throw new Error(`No Facebook pages found for this account. ${detail}`);
   }
   const accounts = [];
   for (const page of pages) {

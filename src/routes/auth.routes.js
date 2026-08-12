@@ -79,7 +79,10 @@ router.get('/auth/:platform/callback', async (req, res) => {
     res.redirect(added ? '/accounts?msg=connected' : '/accounts?msg=updated');
   } catch (err) {
     console.error('[auth]', err);
-    res.redirect('/accounts?msg=error');
+    const desc = String(err.message || err).slice(0, 300);
+    res.redirect(
+      desc ? `/accounts?msg=error&desc=${encodeURIComponent(desc)}` : '/accounts?msg=error'
+    );
   }
 });
 
