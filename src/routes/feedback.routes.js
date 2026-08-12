@@ -1,6 +1,6 @@
 const express = require('express');
 const { scoreFeedback, hasKey, FEEDBACK_THRESHOLD } = require('../services/ai');
-const { sendFeedback, FEEDBACK_TO } = require('../services/feedback');
+const { sendFeedback, FEEDBACK_TO, mailConfigured } = require('../services/feedback');
 
 const router = express.Router();
 
@@ -21,6 +21,7 @@ router.get('/feedback', (req, res) => {
     title: 'Feedback',
     active: 'feedback',
     aiReady: hasKey(),
+    mailReady: mailConfigured(),
     FEEDBACK_TO,
   });
 });

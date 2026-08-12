@@ -14,6 +14,14 @@ const config = {
     apiKey: process.env.OPENROUTER_API_KEY || '',
     model: process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini',
   },
+  mail: {
+    host: process.env.MAIL_HOST || '',
+    port: parseInt(process.env.MAIL_PORT || '465', 10),
+    secure: process.env.MAIL_SECURE === 'true' || !process.env.MAIL_PORT || process.env.MAIL_PORT === '465',
+    user: process.env.MAIL_USER || '',
+    pass: process.env.MAIL_PASS || '',
+    from: process.env.MAIL_FROM || '',
+  },
   linkedin: {
     clientId: process.env.LINKEDIN_CLIENT_ID || '',
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
