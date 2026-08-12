@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth.routes');
 const accountRoutes = require('./routes/accounts.routes');
 const postRoutes = require('./routes/posts.routes');
 const copyRoutes = require('./routes/copy.routes');
+const feedbackRoutes = require('./routes/feedback.routes');
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.use(authRoutes);
 app.use(accountRoutes);
 app.use(postRoutes);
 app.use(copyRoutes);
+app.use(feedbackRoutes);
 
 app.use((req, res) => {
   res.status(404).render('pages/error', { title: 'Not found', code: 404, message: 'Page not found.' });

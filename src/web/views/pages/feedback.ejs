@@ -1,0 +1,36 @@
+<%- include('../partials/head') %>
+<%- include('../partials/header') %>
+
+<div class="mb-10">
+  <p class="micro mb-1.5">Suggestions & reports</p>
+  <h1 class="font-display text-3xl font-bold tracking-tight">Feedback</h1>
+  <p class="text-xs text-faint mt-2">Write a recommendation, suggestion or bug report about socio. An AI checks it's actually useful before it's emailed to the developer.</p>
+</div>
+
+<div class="max-w-2xl">
+  <form hx-post="/feedback/submit" hx-target="#feedback-result" hx-swap="innerHTML"
+        class="card p-6 space-y-4">
+    <div>
+      <label for="message" class="micro block mb-1.5">Your message</label>
+      <textarea id="message" name="message" rows="9" maxlength="5000" required
+        placeholder="e.g. It would be great if posts could be scheduled to each platform at different times…"
+        class="input leading-relaxed w-full"></textarea>
+    </div>
+    <div>
+      <label for="email" class="micro block mb-1.5">Your email <span class="text-faint">(optional — used as reply-to)</span></label>
+      <input id="email" name="email" type="email" placeholder="you@example.com" class="input w-full">
+    </div>
+    <% if (!aiReady) { %>
+      <p class="text-xs text-warn-fg bg-warn-bg rounded-md px-3 py-2">
+        AI scoring is off (OPENROUTER_API_KEY is not set) — messages will be sent without a score.
+      </p>
+    <% } %>
+    <div class="flex items-center justify-between gap-3">
+      <p class="text-xs text-faint">Sent to <%= FEEDBACK_TO %></p>
+      <button class="btn btn-primary" <% if (!aiReady) { %>hx-vals='{"force": "1"}'<% } %>>Check & send</button>
+    </div>
+  </form>
+  <div id="feedback-result" class="mt-4"></div>
+</div>
+
+<%- include('../partials/foot') %>

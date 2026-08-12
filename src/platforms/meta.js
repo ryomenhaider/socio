@@ -4,6 +4,16 @@ const config = require('../config');
 const GRAPH = 'https://graph.facebook.com';
 const VERSION = 'v26.0';
 
+const SCOPES = [
+  'pages_show_list',
+  'pages_manage_posts',
+  'pages_read_engagement',
+  'instagram_basic',
+  'instagram_content_publish',
+  'business_management',
+
+].join(',');
+
 function redirectUri() {
   return `${config.baseUrl}/auth/meta/callback`;
 }
@@ -33,9 +43,7 @@ function buildAuthorizeUrl(state) {
     client_id: config.meta.clientId,
     redirect_uri: redirectUri(),
     state,
-    config_id: config.meta.configId,
-    response_type: 'code',
-    override_default_response_type: 'true',
+    scope: SCOPES,
   });
   return `https://www.facebook.com/${VERSION}/dialog/oauth?${params.toString()}`;
 }

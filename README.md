@@ -59,14 +59,9 @@ Notes:
 
 1. Create a **Business type** app at https://developers.facebook.com/apps and pick the use cases **"Manage everything on your Page"** + **"Manage messaging & content on Instagram"** (adds Facebook Login for Business + Instagram Graph API).
 2. **Facebook Login for Business → Settings → Valid OAuth Redirect URIs:** add `http://localhost:3000/auth/meta/callback` (and `https://vektorlabs.xyz/auth/meta/callback` later).
-3. **Facebook Login for Business → Configurations → Create configuration:**
-   - Access token type: **User access token**
-   - Assets: Facebook Pages + Instagram accounts
-   - Permissions: `pages_show_list`, `pages_manage_posts`, `pages_read_engagement`, `instagram_basic`, `instagram_content_publish`
-   - Save, copy the **Configuration ID**
-4. `META_CLIENT_ID` + `META_CLIENT_SECRET` + `META_CONFIG_ID` in `.env` → **Connect Meta** on `/accounts`
-5. Connecting imports every Facebook page you admin + every linked Instagram business account as separate accounts
-6. Testing as the app admin works in **Development** mode (no App Review); other users need review + Live mode
+3. `META_CLIENT_ID` + `META_CLIENT_SECRET` in `.env` → **Connect Meta** on `/accounts` (the app requests `pages_show_list`, `pages_manage_posts`, `pages_read_engagement`, `instagram_basic`, `instagram_content_publish` at connect time; no Facebook Login for Business configuration is needed)
+4. Connecting imports every Facebook page you admin + every linked Instagram business account as separate accounts
+5. Testing as the app admin works in **Development** mode (no App Review); other users need review + Live mode
 
 Notes:
 - Instagram must be a **business/creator** account linked to a page you admin; text-only posts are not possible on Instagram.

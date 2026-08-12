@@ -21,7 +21,6 @@ const config = {
   meta: {
     clientId: process.env.META_CLIENT_ID || '',
     clientSecret: process.env.META_CLIENT_SECRET || '',
-    configId: process.env.META_CONFIG_ID || '',
   },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || '',
