@@ -2,17 +2,32 @@ const express = require('express');
 const { db } = require('../db');
 const { generateCopy } = require('../services/ai');
 const { fetchCreatorInfo } = require('../platforms/tiktok');
+const { perUserLimiter } = require('../rate-limit');
 
 const router = express.Router();
+
+const MAX_TOPIC_LENGTH = 3000;
+const copyLimiter = perUserLimiter(
+  10,
+  'Too many copy requests. Please try again later.'
+);
 
 router.get('/docs', (req, res) => {
   res.render('pages/docs', { title: 'Documentation', active: 'docs' });
 });
 
-router.post('/api/copy', async (req, res) => {
-  const { topic, tone, length, model } = req.body;
+router.post('/api/copy', copyLimiter, async (req, res) => {
+  const { tone, length, model } = req.body;
+  const topic = String(req.body.topic || '').trim();
+  if (topic.length > MAX_TOPIC_LENGTH) {
+    return res.status(400).render('partials/copy_result', {
+      ok: false,
+      error: `Topic is too long (max ${MAX_TOPIC_LENGTH} characters).`,
+      results: null,
+    });
+  }
   const platforms = [].concat(req.body.platforms || []).filter(Boolean);
-  if (!(topic || '').trim()) {
+  if (!topic) {
     return res.render('partials/copy_result', {
       ok: false,
       error: 'Enter a topic or a few keywords first.',

@@ -5,8 +5,12 @@ const { db } = require('../db');
 const { upload, mediaTypeFromMime } = require('../services/upload');
 const { AI_MODELS, generateCaption, hasKey, getModel } = require('../services/ai');
 const { runOnce } = require('../services/publisher');
+const { perUserLimiter } = require('../rate-limit');
 
 const router = express.Router();
+
+const composeLimiter = perUserLimiter(20, 'Too many posts. Please try again later.');
+const retryLimiter = perUserLimiter(10, 'Too many retry attempts. Please try again later.');
 
 const MSG = {
   posted: { ok: true, text: 'Post queued and dispatched.' },
@@ -78,7 +82,7 @@ router.get('/compose', (req, res) => {
   });
 });
 
-router.post('/compose', upload.any(), async (req, res) => {
+router.post('/compose', composeLimiter, upload.any(), async (req, res) => {
   const { text, topic, tone, length, publish_mode, scheduled_at } = req.body;
   const accountIds = [].concat(req.body.platforms || []).filter(Boolean);
   const files = req.files || [];
@@ -250,7 +254,7 @@ router.get('/posts', (req, res) => {
   });
 });
 
-router.post('/targets/:id/retry', async (req, res) => {
+router.post('/targets/:id/retry', retryLimiter, async (req, res) => {
   const target = db.prepare('SELECT * FROM post_targets WHERE id = ?').get(req.params.id);
   if (target) {
     db.prepare(

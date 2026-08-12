@@ -6,11 +6,16 @@ const {
   verifySession,
   SESSION_TTL_MS,
 } = require('../auth');
+const { loginLimiter } = require('../rate-limit');
+const config = require('../config');
 
 const router = express.Router();
 
+const secureCookies = config.baseUrl.startsWith('https');
+const sessionCookieName = secureCookies ? '__Host-sid' : 'sid';
+
 router.get('/login', (req, res) => {
-  if (verifySession(req.cookies.sid)) {
+  if (verifySession(req.cookies[sessionCookieName] || req.cookies['__Host-sid'])) {
     return res.redirect(req.query.next || '/dashboard');
   }
   const next =
@@ -25,7 +30,7 @@ router.get('/login', (req, res) => {
   });
 });
 
-router.post('/login', (req, res) => {
+router.post('/login', loginLimiter, (req, res) => {
   const { username, password } = req.body;
   const next =
     typeof req.query.next === 'string' && req.query.next.startsWith('/')
@@ -35,17 +40,18 @@ router.post('/login', (req, res) => {
   if (!user || !verifyPassword(password, user.password_hash)) {
     return res.redirect(`/login?next=${encodeURIComponent(next)}&msg=bad_credentials`);
   }
-  res.cookie('__Host-sid', createSession(user.username), {
+  res.cookie(sessionCookieName, createSession(user.username), {
     httpOnly: true,
     sameSite: 'lax',
     path: '/',
+    secure: secureCookies,
     maxAge: SESSION_TTL_MS,
   });
   res.redirect(next);
 });
 
 router.post('/logout', (req, res) => {
-  res.clearCookie('sid');
+  res.clearCookie(sessionCookieName, { path: '/' });
   res.redirect('/');
 });
 
