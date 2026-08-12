@@ -70,7 +70,7 @@ function parseCookies(header) {
 }
 
 function requireAuth(req, res, next) {
-  const session = verifySession(req.cookies.sid);
+  const session = verifySession(req.cookies['__Host-sid'] || req.cookies.sid);
   if (!session) {
     if (req.path.startsWith('/api/') || req.method !== 'GET') {
       return res.status(401).json({ error: 'unauthorized' });

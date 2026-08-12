@@ -3,6 +3,9 @@ const path = require('path');
 const multer = require('multer');
 const config = require('../config');
 
+const MAX_FILE_COUNT = 10;
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, config.mediaDir),
   filename: (req, file, cb) => {
@@ -19,7 +22,7 @@ function isMediaAllowed(file) {
 
 const upload = multer({
   storage,
-  limits: { fileSize: 300 * 1024 * 1024 },
+  limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILE_COUNT },
   fileFilter: (req, file, cb) => {
     if (isMediaAllowed(file)) cb(null, true);
     else cb(new Error('Only image or video files are allowed.'));

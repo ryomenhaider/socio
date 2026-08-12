@@ -1,10 +1,15 @@
 const express = require('express');
 const { scoreFeedback, hasKey, FEEDBACK_THRESHOLD } = require('../services/ai');
 const { sendFeedback, FEEDBACK_TO, mailConfigured } = require('../services/feedback');
+const { perUserLimiter } = require('../rate-limit');
 
 const router = express.Router();
 
 const MAX_LENGTH = 5000;
+const feedbackLimiter = perUserLimiter(
+  10,
+  'Too many feedback submissions. Please try again later.'
+);
 
 function renderResult(res, opts) {
   return res.render('partials/feedback_result', {
@@ -12,6 +17,7 @@ function renderResult(res, opts) {
     message: '',
     email: '',
     force: false,
+    lowScore: false,
     ...opts,
   });
 }
@@ -26,7 +32,7 @@ router.get('/feedback', (req, res) => {
   });
 });
 
-router.post('/feedback/submit', async (req, res) => {
+router.post('/feedback/submit', feedbackLimiter, async (req, res) => {
   const message = String(req.body.message || '').trim();
   const email = String(req.body.email || '').trim();
   const force = req.body.force === '1';
@@ -41,27 +47,25 @@ router.post('/feedback/submit', async (req, res) => {
       force,
     });
   }
-  if (!force) {
-    if (!message) {
-      return renderResult(res, {
-        ok: false,
-        error: 'Write a message first.',
-        score: null,
-        reason: null,
-        message,
-        force,
-      });
-    }
-    if (message.length > MAX_LENGTH) {
-      return renderResult(res, {
-        ok: false,
-        error: `Message is too long (max ${MAX_LENGTH} characters).`,
-        score: null,
-        reason: null,
-        message,
-        force,
-      });
-    }
+  if (!message) {
+    return renderResult(res, {
+      ok: false,
+      error: 'Write a message first.',
+      score: null,
+      reason: null,
+      message,
+      force,
+    });
+  }
+  if (message.length > MAX_LENGTH) {
+    return renderResult(res, {
+      ok: false,
+      error: `Message is too long (max ${MAX_LENGTH} characters).`,
+      score: null,
+      reason: null,
+      message,
+      force,
+    });
   }
   let score = null;
   let reason = null;
