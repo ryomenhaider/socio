@@ -10,7 +10,7 @@
 set -euo pipefail
 
 APP_DIR="${1:?usage: bash deploy/install.sh /home/ubuntu/socio [domain] [app-user]}"
-DOMAIN="${2:-vektorlabs.xyz}"
+DOMAIN="${2:-}"
 APP_USER="${3:-ubuntu}"
 
 if [[ "${DOMAIN}" == "vektorlabs.xyz" ]]; then
