@@ -35,9 +35,10 @@ router.post('/login', (req, res) => {
   if (!user || !verifyPassword(password, user.password_hash)) {
     return res.redirect(`/login?next=${encodeURIComponent(next)}&msg=bad_credentials`);
   }
-  res.cookie('sid', createSession(user.username), {
+  res.cookie('__Host-sid', createSession(user.username), {
     httpOnly: true,
     sameSite: 'lax',
+    path: '/',
     maxAge: SESSION_TTL_MS,
   });
   res.redirect(next);

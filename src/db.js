@@ -44,7 +44,8 @@ CREATE TABLE IF NOT EXISTS post_targets (
   error TEXT,
   attempts INTEGER NOT NULL DEFAULT 0,
   extra TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS settings (
@@ -70,11 +71,19 @@ const cols = db.prepare('PRAGMA table_info(post_targets)').all();
 if (!cols.some((c) => c.name === 'extra')) {
   db.exec('ALTER TABLE post_targets ADD COLUMN extra TEXT');
 }
-for (const c of ['text', 'media_path', 'media_type', 'media_name']) {
+for (const c of ['text', 'media_path', 'media_type', 'media_name', 'updated_at']) {
   if (!cols.some((x) => x.name === c)) {
     db.exec(`ALTER TABLE post_targets ADD COLUMN ${c} TEXT`);
   }
 }
+
+db.exec(
+  'CREATE INDEX IF NOT EXISTS idx_post_targets_status_updated_at ON post_targets (status, updated_at)'
+);
+
+db.exec(
+  'CREATE INDEX IF NOT EXISTS idx_post_targets_status_next_attempt_at ON post_targets (status, next_attempt_at)'
+);
 
 function getSetting(key) {
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);

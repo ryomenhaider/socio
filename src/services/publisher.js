@@ -84,62 +84,89 @@ function computeNextAttempt(target) {
   return new Date(Date.now() + backoffMin * 60 * 1000).toISOString();
 }
 
+const STALE_TIMEOUT_MS = 15 * 60 * 1000;
+
+const claimTarget = db.transaction((id, ts) =>
+  db
+    .prepare(
+      `UPDATE post_targets SET status = 'publishing', updated_at = ? WHERE id = ? AND status = 'scheduled'`
+    )
+    .run(ts, id).changes
+);
+
 async function runOnce() {
-  if (runOnce.locked) return 0;
-  runOnce.locked = true;
   let published = 0;
-  try {
-    const now = new Date().toISOString();
-    const due = db
-      .prepare(
-        `SELECT * FROM post_targets
-         WHERE status = 'scheduled' AND next_attempt_at <= ?
-         ORDER BY scheduled_at ASC LIMIT 10`
-      )
-      .all(now);
-    for (const target of due) {
-      db.prepare(
-        `UPDATE post_targets SET status = 'publishing', attempts = attempts + 1 WHERE id = ?`
-      ).run(target.id);
-      try {
-        const result = await publishTarget(target);
-        db.prepare(
-          `UPDATE post_targets SET status = 'published', external_id = ?, error = NULL WHERE id = ?`
-        ).run(result?.externalId || null, target.id);
-        published += 1;
-      } catch (err) {
-        const nextAttempts = target.attempts + 1;
-        const failed = nextAttempts >= MAX_ATTEMPTS;
-        const persistExternalId = err.persistExternalId || null;
-        db.prepare(
-          `UPDATE post_targets
-           SET status = ?, error = ?, next_attempt_at = ?, external_id = COALESCE(?, external_id) WHERE id = ?`
-        ).run(
-          failed ? 'failed' : 'scheduled',
-          String(err.message || err).slice(0, 2000),
-          failed ? new Date().toISOString() : computeNextAttempt({ attempts: nextAttempts }),
-          persistExternalId,
-          target.id
-        );
-      }
-    }
-    const completed = db
-      .prepare(
-        `UPDATE posts SET status = CASE
-           WHEN NOT EXISTS (SELECT 1 FROM post_targets WHERE post_id = posts.id AND status IN ('scheduled','publishing')) THEN
-             CASE WHEN EXISTS (SELECT 1 FROM post_targets WHERE post_id = posts.id AND status = 'failed') AND
-                       NOT EXISTS (SELECT 1 FROM post_targets WHERE post_id = posts.id AND status = 'published')
-               THEN 'failed' ELSE 'published' END
-           ELSE 'scheduled' END
-         WHERE status IN ('scheduled','publishing')`
-      )
-      .run();
-    return published;
-  } finally {
-    runOnce.locked = false;
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const staleBefore = new Date(now.getTime() - STALE_TIMEOUT_MS).toISOString();
+
+  const stale = db
+    .prepare(
+      `SELECT id, platform, external_id FROM post_targets WHERE status = 'publishing' AND updated_at < ?`
+    )
+    .all(staleBefore);
+  for (const t of stale) {
+    const resumable = t.platform === 'tiktok' && t.external_id;
+    db.prepare(
+      `UPDATE post_targets
+       SET status = ?, error = ?, next_attempt_at = ?, updated_at = ? WHERE id = ?`
+    ).run(
+      resumable ? 'scheduled' : 'failed',
+      resumable
+        ? null
+        : 'Stalled publish (no progress for 15+ min) - manual verification required.',
+      nowIso,
+      nowIso,
+      t.id
+    );
   }
+
+  const due = db
+    .prepare(
+      `SELECT * FROM post_targets
+       WHERE status = 'scheduled' AND next_attempt_at <= ?
+       ORDER BY scheduled_at ASC LIMIT 10`
+    )
+    .all(nowIso);
+  for (const target of due) {
+    if (claimTarget(target.id, nowIso) !== 1) continue;
+    try {
+      const result = await publishTarget(target);
+      db.prepare(
+        `UPDATE post_targets SET status = 'published', external_id = ?, error = NULL, updated_at = ? WHERE id = ?`
+      ).run(result?.externalId || null, nowIso, target.id);
+      published += 1;
+    } catch (err) {
+      const nextAttempts = target.attempts + 1;
+      const failed = nextAttempts >= MAX_ATTEMPTS;
+      const persistExternalId = err.persistExternalId || null;
+      db.prepare(
+        `UPDATE post_targets
+         SET status = ?, error = ?, next_attempt_at = ?, attempts = ?, external_id = COALESCE(?, external_id), updated_at = ? WHERE id = ?`
+      ).run(
+        failed ? 'failed' : 'scheduled',
+        String(err.message || err).slice(0, 2000),
+        failed ? nowIso : computeNextAttempt({ attempts: nextAttempts }),
+        nextAttempts,
+        persistExternalId,
+        nowIso,
+        target.id
+      );
+    }
+  }
+  const completed = db
+    .prepare(
+      `UPDATE posts SET status = CASE
+         WHEN NOT EXISTS (SELECT 1 FROM post_targets WHERE post_id = posts.id AND status IN ('scheduled','publishing')) THEN
+           CASE WHEN EXISTS (SELECT 1 FROM post_targets WHERE post_id = posts.id AND status = 'failed') AND
+                     NOT EXISTS (SELECT 1 FROM post_targets WHERE post_id = posts.id AND status = 'published')
+             THEN 'failed' ELSE 'published' END
+         ELSE 'scheduled' END
+       WHERE status IN ('scheduled','publishing')`
+    )
+    .run();
+  return published;
 }
-runOnce.locked = false;
 
 function start() {
   setInterval(() => {
