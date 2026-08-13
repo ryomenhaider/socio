@@ -11,7 +11,8 @@
   empty: 'Write some text or use the AI copywriter.',
   error: 'Something went wrong. Try again.',
   no_consent: 'TikTok requires your consent to post — check the music usage confirmation box.',
-  no_privacy: 'TikTok requires a privacy level — pick one from the dropdown.'
+  no_privacy: 'TikTok requires a privacy level — pick one from the dropdown.',
+  bad_file: 'Rejected file — content did not match its declared type.'
 }; %>
 <% if (msg) { %>
   <div class="alert alert-error mb-6 <%= MSG[msg] ? '' : 'hidden' %>"><%= MSG[msg] || msg %></div>

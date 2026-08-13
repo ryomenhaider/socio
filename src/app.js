@@ -41,7 +41,15 @@ app.use(sessionRoutes);
 
 app.use(requireAuth);
 
-app.use('/media', express.static(config.mediaDir, { fallthrough: true }));
+app.use(
+  '/media',
+  (req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Security-Policy', "default-src 'none'");
+    next();
+  },
+  express.static(config.mediaDir, { fallthrough: true })
+);
 app.use(authRoutes);
 app.use(accountRoutes);
 app.use(postRoutes);
