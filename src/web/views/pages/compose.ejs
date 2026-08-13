@@ -19,25 +19,6 @@
 <% } %>
 
 <form action="/compose" method="post" enctype="multipart/form-data" x-data="{ mode: 'now' }" class="max-w-3xl space-y-6">
-  <div class="card p-6">
-    <div class="flex items-baseline justify-between">
-      <label for="post-text" class="label mb-2">Post text</label>
-      <span id="post-text-count" class="text-xs text-faint font-mono mb-2">0 / 3000</span>
-    </div>
-    <textarea id="post-text" name="text" rows="7" maxlength="3000"
-      placeholder="What's the update?"
-      class="input leading-relaxed"></textarea>
-    <p class="text-xs text-faint mt-2 leading-relaxed">
-      Character limits — LinkedIn 3,000 · Instagram &amp; TikTok 2,200 · YouTube 5,000 · Facebook ~63,000
-    </p>
-  </div>
-
-  <div class="card p-6">
-    <label for="media" class="label">Media <span class="font-normal text-faint">(optional)</span></label>
-    <input type="file" id="media" name="media" accept="image/*,video/*"
-      class="block w-full text-sm text-faint file:mr-4 file:py-2 file:px-4 file:rounded-md file:border file:border-border file:bg-surface-2 file:text-text hover:file:bg-input">
-    <p class="text-xs text-faint mt-2">One image or video up to 300 MB.</p>
-  </div>
 
   <div class="card p-6">
     <div class="flex flex-wrap items-center gap-2.5 mb-4">
