@@ -23,6 +23,8 @@ const MSG = {
   no_media: { ok: false, text: 'This platform requires text or media.' },
   no_consent: { ok: false, text: 'TikTok requires your consent to post (music usage confirmation).' },
   no_privacy: { ok: false, text: 'TikTok requires a privacy level. Pick one from the dropdown.' },
+  media_required: { ok: false, text: 'This platform needs a media file — add one or uncheck the platform.' },
+  bad_format: { ok: false, text: 'That file is not supported by this platform — YouTube and TikTok take mp4 video, Instagram takes image or video.' },
 };
 
 router.get('/dashboard', (req, res) => {
@@ -133,6 +135,7 @@ router.post('/compose', composeLimiter, upload.any(), async (req, res) => {
           ? {
               path: file.path,
               type: mediaTypeFromMime(file.mimetype),
+              kind: file._media?.kind || null,
               name: file.originalname,
             }
           : null,
@@ -141,6 +144,25 @@ router.post('/compose', composeLimiter, upload.any(), async (req, res) => {
     if (targets.some((t) => !t.text)) {
       unlinkAll();
       return res.redirect('/compose?msg=empty');
+    }
+    const PLATFORM_MEDIA_RULES = {
+      instagram: { required: true, kinds: new Set(['png', 'jpeg', 'gif', 'webp', 'mp4']) },
+      youtube: { required: true, kinds: new Set(['mp4']) },
+      tiktok: { required: true, kinds: new Set(['mp4']) },
+      linkedin: { required: false, kinds: new Set(['png', 'jpeg', 'gif', 'webp']) },
+      facebook: { required: false, kinds: new Set(['png', 'jpeg', 'gif', 'webp', 'mp4']) },
+    };
+    for (const t of targets) {
+      const rule = PLATFORM_MEDIA_RULES[t.account.platform];
+      if (!rule) continue;
+      if (rule.required && !t.media) {
+        unlinkAll();
+        return res.redirect('/compose?msg=media_required');
+      }
+      if (t.media && !rule.kinds.has(t.media.kind)) {
+        unlinkAll();
+        return res.redirect('/compose?msg=bad_format');
+      }
     }
     for (const t of targets) {
       if (t.account.platform !== 'tiktok') continue;
