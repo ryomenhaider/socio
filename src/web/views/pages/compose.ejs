@@ -12,7 +12,9 @@
   error: 'Something went wrong. Try again.',
   no_consent: 'TikTok requires your consent to post — check the music usage confirmation box.',
   no_privacy: 'TikTok requires a privacy level — pick one from the dropdown.',
-  bad_file: 'Rejected file — content did not match its declared type.'
+  bad_file: 'Rejected file — content did not match its declared type.',
+  media_required: 'This platform needs a media file — add one or uncheck the platform.',
+  bad_format: 'That file is not supported by this platform — YouTube and TikTok take mp4 video, Instagram takes image or video.'
 }; %>
 <% if (msg) { %>
   <div class="alert alert-error mb-6 <%= MSG[msg] ? '' : 'hidden' %>"><%= MSG[msg] || msg %></div>
@@ -94,6 +96,12 @@
         youtube: 'Video file (mp4). YouTube requires a video.',
         tiktok: 'Video file (mp4). TikTok requires a video.'
       }; %>
+      <% const MEDIA_REQUIRED = { instagram: true, youtube: true, tiktok: true }; %>
+      <% const MEDIA_ACCEPT = {
+        linkedin: 'image/*',
+        youtube: 'video/mp4',
+        tiktok: 'video/mp4'
+      }; %>
       <div class="card divide-y divide-border">
         <% for (const a of accounts) { %>
           <div>
@@ -116,8 +124,8 @@
                 <p class="text-xs text-faint mt-2">Leave empty to use the shared "Post text" above.</p>
               </div>
               <div>
-                <label class="label">Media <span class="font-normal text-faint">(optional)</span></label>
-                <input type="file" name="media_<%= a.id %>" accept="image/*,video/*"
+                <label class="label">Media <span class="font-normal text-faint">(<%= MEDIA_REQUIRED[a.platform] ? 'required' : 'optional' %>)</span></label>
+                <input type="file" name="media_<%= a.id %>" accept="<%= MEDIA_ACCEPT[a.platform] || 'image/*,video/*' %>"
                   class="block w-full text-sm text-faint file:mr-4 file:py-2 file:px-4 file:rounded-md file:border file:border-border file:bg-surface-2 file:text-text hover:file:bg-input">
                 <p class="text-xs text-faint mt-2"><%= MEDIA_HINTS[a.platform] || 'Image or video.' %></p>
               </div>

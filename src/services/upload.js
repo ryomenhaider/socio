@@ -9,6 +9,13 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'video/mp4']);
 const TEXT_MARKERS = ['<?xml', '<svg', '<!DOCTYPE', '<html', '<script'];
+const MIME_OF_KIND = {
+  png: 'image/png',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  mp4: 'video/mp4',
+};
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, config.mediaDir),
@@ -30,21 +37,13 @@ function startsWith(buf, sig) {
   return true;
 }
 
-function magicOk(mime, buf) {
-  switch (mime) {
-    case 'image/png':
-      return startsWith(buf, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-    case 'image/jpeg':
-      return startsWith(buf, [0xff, 0xd8, 0xff]);
-    case 'image/gif':
-      return startsWith(buf, 'GIF87a') || startsWith(buf, 'GIF89a');
-    case 'image/webp':
-      return startsWith(buf, 'RIFF') && buf.length >= 12 && buf.toString('latin1', 8, 12) === 'WEBP';
-    case 'video/mp4':
-      return buf.length >= 8 && buf.toString('latin1', 4, 8) === 'ftyp';
-    default:
-      return false;
-  }
+function detectKind(buf) {
+  if (startsWith(buf, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return 'png';
+  if (startsWith(buf, [0xff, 0xd8, 0xff])) return 'jpeg';
+  if (startsWith(buf, 'GIF87a') || startsWith(buf, 'GIF89a')) return 'gif';
+  if (startsWith(buf, 'RIFF') && buf.length >= 12 && buf.toString('latin1', 8, 12) === 'WEBP') return 'webp';
+  if (buf.length >= 8 && buf.toString('latin1', 4, 8) === 'ftyp') return 'mp4';
+  return null;
 }
 
 function validateMediaFile(file) {
@@ -64,7 +63,11 @@ function validateMediaFile(file) {
   } catch {
     return { ok: false, reason: 'unreadable file' };
   }
-  if (magicOk(mime, buf)) return { ok: true };
+  const kind = detectKind(buf);
+  if (kind && MIME_OF_KIND[kind] === mime) {
+    file._media = { kind, type: kind === 'mp4' ? 'video' : 'image' };
+    return { ok: true, kind, type: file._media.type };
+  }
   const head = buf.toString('latin1').toLowerCase();
   if (TEXT_MARKERS.some((m) => head.includes(m))) {
     return { ok: false, reason: 'content is markup (SVG/HTML/XML) — rejected regardless of claimed type' };
