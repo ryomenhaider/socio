@@ -14,14 +14,20 @@ const router = express.Router();
 const secureCookies = config.baseUrl.startsWith('https');
 const sessionCookieName = secureCookies ? '__Host-sid' : 'sid';
 
+function safeNext(value) {
+  return typeof value === 'string' &&
+    value.startsWith('/') &&
+    !value.startsWith('//') &&
+    !value.startsWith('/\\')
+    ? value
+    : '/dashboard';
+}
+
 router.get('/login', (req, res) => {
   if (verifySession(req.cookies[sessionCookieName] || req.cookies['__Host-sid'])) {
-    return res.redirect(req.query.next || '/dashboard');
+    return res.redirect(safeNext(req.query.next));
   }
-  const next =
-    typeof req.query.next === 'string' && req.query.next.startsWith('/')
-      ? req.query.next
-      : '/dashboard';
+  const next = safeNext(req.query.next);
   res.render('pages/login', {
     title: 'Sign in',
     msg: req.query.msg || null,
@@ -32,10 +38,7 @@ router.get('/login', (req, res) => {
 
 router.post('/login', loginLimiter, (req, res) => {
   const { username, password } = req.body;
-  const next =
-    typeof req.query.next === 'string' && req.query.next.startsWith('/')
-      ? req.query.next
-      : '/dashboard';
+  const next = safeNext(req.query.next);
   const user = getUserByUsername(username);
   if (!user || !verifyPassword(password, user.password_hash)) {
     return res.redirect(`/login?next=${encodeURIComponent(next)}&msg=bad_credentials`);
