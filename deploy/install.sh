@@ -3,9 +3,9 @@
 #
 # usage:  bash deploy/install.sh /home/ubuntu/socio
 #
-# Domain defaults to vektorlabs.xyz (override with a second arg). This sets up
-# Node 22, npm dependencies, .env (BASE_URL=https://<domain>), nginx, a Let's
-# Encrypt certificate via certbot, and a systemd service so socio runs forever.
+# Passing a domain as the second arg sets up nginx, TLS via Let's Encrypt
+# (certbot) and BASE_URL. Without it, only the app + systemd service are set
+# up and BASE_URL stays whatever .env says.
 
 set -euo pipefail
 
@@ -15,14 +15,14 @@ DOMAIN="${2:-}"
 # dedicated service user. For production deployments create a system user and
 # pass it as the 3rd arg instead, e.g.:
 #   sudo useradd --system --home /var/lib/socio --shell /usr/sbin/nologin socio
-#   bash deploy/install.sh /home/ubuntu/socio vektorlabs.xyz socio
+#   bash deploy/install.sh /home/ubuntu/socio example.com socio
 # Also chmod 600 the app's .env after install (it holds API secrets and is
 # read by the service via EnvironmentFile).
 APP_USER="${3:-ubuntu}"
 
-if [[ "${DOMAIN}" == "vektorlabs.xyz" ]]; then
-  echo "==> Using default domain: https://${DOMAIN}"
-  echo "    (A record ${DOMAIN} must point to this instance, e.g. 141.148.15.111)"
+if [[ -n "${DOMAIN}" ]]; then
+  echo "==> Using domain: https://${DOMAIN}"
+  echo "    (A record ${DOMAIN} must point to this instance)"
 fi
 
 echo "==> Installing system packages (nodejs, nginx, certbot)"

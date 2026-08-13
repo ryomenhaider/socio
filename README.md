@@ -59,7 +59,7 @@ Notes:
 ## Setup: Facebook + Instagram (one Meta app)
 
 1. Create a **Business type** app at https://developers.facebook.com/apps and pick the use cases **"Manage everything on your Page"** + **"Manage messaging & content on Instagram"** (adds Facebook Login for Business + Instagram Graph API).
-2. **Facebook Login for Business → Settings → Valid OAuth Redirect URIs:** add `http://localhost:3000/auth/meta/callback` (and `https://vektorlabs.xyz/auth/meta/callback` later).
+2. **Facebook Login for Business → Settings → Valid OAuth Redirect URIs:** add `http://localhost:3000/auth/meta/callback` (and `https://<your-domain>/auth/meta/callback` later).
 3. `META_CLIENT_ID` + `META_CLIENT_SECRET` in `.env` → **Connect Meta** on `/accounts` (the app requests `pages_show_list`, `pages_manage_posts`, `pages_read_engagement`, `instagram_basic`, `instagram_content_publish` at connect time; no Facebook Login for Business configuration is needed)
 4. Connecting imports every Facebook page you admin + every linked Instagram business account as separate accounts
 5. Testing as the app admin works in **Development** mode (no App Review); other users need review + Live mode
@@ -119,9 +119,9 @@ An optional "Your email" field is used as the `Reply-To` so you can answer the s
 
 ## Deploying on a 1 GB VPS (Oracle Cloud free instance)
 
-Domain: `vektorlabs.xyz` (A record → `141.148.15.111`).
+Domain: use your own (a domain is required for TLS + OAuth redirect URIs).
 
-1. **DNS:** A record `vektorlabs.xyz` → `141.148.15.111` (already set at Namecheap).
+1. **DNS:** A record `<your-domain>` → your instance IP.
 2. **OCI console:** VCN → subnet Security List → add ingress rules for TCP 80 and TCP 443.
 3. **Instance OS firewall** (Oracle Ubuntu images use iptables):
    ```bash
@@ -129,10 +129,10 @@ Domain: `vektorlabs.xyz` (A record → `141.148.15.111`).
    sudo iptables -I INPUT -p tcp --dport 443 -j ACCEPT
    sudo netfilter-persistent save
    ```
-4. **Deploy** (installs Node 22, nginx, certbot; sets up the systemd service + TLS for vektorlabs.xyz):
+4. **Deploy** (installs Node 22, nginx, certbot; sets up the systemd service + TLS for your domain):
    ```bash
    git clone git@github.com:ryomenhaider/socio.git && cd socio
-   bash deploy/install.sh /home/ubuntu/socio
+   bash deploy/install.sh /home/ubuntu/socio <your-domain>
    ```
 5. **Configure:**
    ```bash
@@ -141,10 +141,10 @@ Domain: `vektorlabs.xyz` (A record → `141.148.15.111`).
    sudo systemctl restart socio
    ```
 6. **OAuth redirect URIs** (add in each developer console):
-   - LinkedIn: `https://vektorlabs.xyz/auth/linkedin/callback`
-   - Meta: `https://vektorlabs.xyz/auth/meta/callback`
-   - Google: `https://vektorlabs.xyz/auth/youtube/callback`
-   - TikTok: `https://vektorlabs.xyz/auth/tiktok/callback`
+   - LinkedIn: `https://<your-domain>/auth/linkedin/callback`
+   - Meta: `https://<your-domain>/auth/meta/callback`
+   - Google: `https://<your-domain>/auth/youtube/callback`
+   - TikTok: `https://<your-domain>/auth/tiktok/callback`
 
 Ops:
 ```bash
