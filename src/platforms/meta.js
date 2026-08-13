@@ -350,7 +350,7 @@ const instagram = definePlatform({
     let uploadUri = null;
     try {
       container = await createContainer(igId, {
-        media_type: 'VIDEO',
+        media_type: 'REELS',
         upload_type: 'resumable',
         share_to_feed: 'true',
         caption,
@@ -359,12 +359,14 @@ const instagram = definePlatform({
       uploadUri = container.uri || null;
     } catch (err) {
       try {
-        container = await graphPostMultipart(
-          `${igId}/media`,
-          { media_type: 'VIDEO', share_to_feed: 'true', caption, access_token: token },
-          'video',
-          media
-        );
+        if (!isPublicUrl(config.baseUrl)) throw err;
+        container = await createContainer(igId, {
+          media_type: 'REELS',
+          video_url: `${config.baseUrl}/media/${encodeURIComponent(media.name)}`,
+          share_to_feed: 'true',
+          caption,
+          access_token: token,
+        });
       } catch (fallbackErr) {
         throw err;
       }
