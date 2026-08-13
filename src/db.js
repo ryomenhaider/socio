@@ -11,6 +11,25 @@ db.pragma('journal_mode = WAL');
 db.pragma('busy_timeout = 5000');
 db.pragma('foreign_keys = ON');
 
+function ensureMode(file, mode) {
+  try {
+    const st = fs.statSync(file);
+    if ((st.mode & 0o777) !== mode) fs.chmodSync(file, mode);
+  } catch {
+    // file does not exist yet (SQLite creates -wal/-shm lazily); the periodic pass covers it
+  }
+}
+
+function hardenPermissions() {
+  ensureMode(config.dataDir, 0o700);
+  ensureMode(config.dbPath, 0o600);
+  ensureMode(`${config.dbPath}-wal`, 0o600);
+  ensureMode(`${config.dbPath}-shm`, 0o600);
+}
+
+hardenPermissions();
+setInterval(hardenPermissions, 5000).unref();
+
 db.exec(`
 CREATE TABLE IF NOT EXISTS accounts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

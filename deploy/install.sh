@@ -11,6 +11,13 @@ set -euo pipefail
 
 APP_DIR="${1:?usage: bash deploy/install.sh /home/ubuntu/socio [domain] [app-user]}"
 DOMAIN="${2:-vektorlabs.xyz}"
+# WARNING: 'ubuntu' is the general-purpose SSH/admin login account, not a
+# dedicated service user. For production deployments create a system user and
+# pass it as the 3rd arg instead, e.g.:
+#   sudo useradd --system --home /var/lib/socio --shell /usr/sbin/nologin socio
+#   bash deploy/install.sh /home/ubuntu/socio vektorlabs.xyz socio
+# Also chmod 600 the app's .env after install (it holds API secrets and is
+# read by the service via EnvironmentFile).
 APP_USER="${3:-ubuntu}"
 
 if [[ "${DOMAIN}" == "vektorlabs.xyz" ]]; then
