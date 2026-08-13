@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const { db } = require('../db');
-const { upload, mediaTypeFromMime } = require('../services/upload');
+const { upload, mediaTypeFromMime, validateMediaFiles } = require('../services/upload');
 const { AI_MODELS, generateCaption, hasKey, getModel } = require('../services/ai');
 const { runOnce } = require('../services/publisher');
 const { perUserLimiter } = require('../rate-limit');
@@ -17,6 +17,7 @@ const MSG = {
   posted: { ok: true, text: 'Post queued and dispatched.' },
   scheduled: { ok: true, text: 'Post scheduled.' },
   error: { ok: false, text: 'Something went wrong. Check the post status.' },
+  bad_file: { ok: false, text: 'Rejected file — content did not match its declared type.' },
   no_platform: { ok: false, text: 'Select at least one platform to post to.' },
   empty: { ok: false, text: 'Every selected platform needs text — write some or use the AI copywriter.' },
   no_media: { ok: false, text: 'This platform requires text or media.' },
@@ -95,6 +96,13 @@ router.post('/compose', composeLimiter, upload.any(), async (req, res) => {
   const unlinkAll = () => {
     for (const f of files) fs.unlink(f.path, () => {});
   };
+  const bad = validateMediaFiles(files);
+  if (!bad.ok) {
+    for (const f of files) {
+      try { fs.unlinkSync(f.path); } catch {}
+    }
+    return res.redirect('/compose?msg=bad_file');
+  }
   let caption = (text || '').trim();
   try {
     if (!caption && (topic || '').trim()) {
