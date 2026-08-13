@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const express = require('express');
 const { db } = require('../db');
 const platforms = require('../platforms');
+const { currentUserId } = require('../auth');
 
 const router = express.Router();
 
@@ -42,6 +43,7 @@ router.get('/auth/:platform/callback', async (req, res) => {
     return res.redirect('/accounts?msg=bad_state');
   }
   db.prepare('DELETE FROM oauth_states WHERE state = ?').run(state);
+  const userId = currentUserId(res);
   try {
     const result = await adapter.handleCallback(code, state);
     const incoming = (result.accounts || []).map((a) => ({
@@ -56,23 +58,24 @@ router.get('/auth/:platform/callback', async (req, res) => {
     for (const acc of incoming) {
       const parsed = JSON.parse(acc.token);
       const profileId = parsed.profile?.id;
-      const existing = profileId
+      const existing = profileId && userId
         ? db
-            .prepare('SELECT * FROM accounts WHERE platform = ?')
-            .all(acc.platform)
+            .prepare('SELECT * FROM accounts WHERE platform = ? AND user_id = ?')
+            .all(acc.platform, userId)
             .find((a) => JSON.parse(a.token).profile?.id === profileId)
         : null;
       if (existing) {
-        db.prepare('UPDATE accounts SET token = ?, display_name = ?, status = ?, last_error = NULL WHERE id = ?').run(
+        db.prepare('UPDATE accounts SET token = ?, display_name = ?, status = ?, last_error = NULL WHERE id = ? AND user_id = ?').run(
           acc.token,
           acc.displayName,
           'connected',
-          existing.id
+          existing.id,
+          userId
         );
       } else {
         db.prepare(
-          'INSERT INTO accounts (platform, display_name, token) VALUES (?, ?, ?)'
-        ).run(acc.platform, acc.displayName, acc.token);
+          'INSERT INTO accounts (user_id, platform, display_name, token) VALUES (?, ?, ?, ?)'
+        ).run(userId, acc.platform, acc.displayName, acc.token);
         added += 1;
       }
     }

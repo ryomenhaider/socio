@@ -6,6 +6,7 @@ const { upload, mediaTypeFromMime } = require('../services/upload');
 const { AI_MODELS, generateCaption, hasKey, getModel } = require('../services/ai');
 const { runOnce } = require('../services/publisher');
 const { perUserLimiter } = require('../rate-limit');
+const { currentUserId, getOwnedTarget } = require('../auth');
 
 const router = express.Router();
 
@@ -24,32 +25,36 @@ const MSG = {
 };
 
 router.get('/dashboard', (req, res) => {
+  const userId = currentUserId(res);
   const stats = {
-    drafts: db.prepare("SELECT COUNT(*) c FROM posts WHERE status = 'draft'").get().c,
+    drafts: db.prepare("SELECT COUNT(*) c FROM posts WHERE status = 'draft' AND user_id = ?").get(userId).c,
     scheduled: db
-      .prepare("SELECT COUNT(*) c FROM posts WHERE status = 'scheduled'")
-      .get().c,
+      .prepare("SELECT COUNT(*) c FROM posts WHERE status = 'scheduled' AND user_id = ?")
+      .get(userId).c,
     published: db
-      .prepare("SELECT COUNT(*) c FROM posts WHERE status = 'published'")
-      .get().c,
-    failed: db.prepare("SELECT COUNT(*) c FROM posts WHERE status = 'failed'").get().c,
+      .prepare("SELECT COUNT(*) c FROM posts WHERE status = 'published' AND user_id = ?")
+      .get(userId).c,
+    failed: db.prepare("SELECT COUNT(*) c FROM posts WHERE status = 'failed' AND user_id = ?").get(userId).c,
   };
-  const accounts = db.prepare('SELECT * FROM accounts ORDER BY platform').all();
+  const accounts = db
+    .prepare('SELECT * FROM accounts WHERE user_id = ? ORDER BY platform')
+    .all(userId);
   const upcoming = db
     .prepare(
       `SELECT t.*, a.display_name AS account_name, a.platform AS account_platform
        FROM post_targets t JOIN accounts a ON a.id = t.account_id
-       WHERE t.status = 'scheduled'
+       WHERE t.status = 'scheduled' AND t.user_id = ?
        ORDER BY t.scheduled_at ASC LIMIT 10`
     )
-    .all();
+    .all(userId);
   const recent = db
     .prepare(
       `SELECT p.*, COUNT(t.id) AS target_count
        FROM posts p LEFT JOIN post_targets t ON t.post_id = p.id
+       WHERE p.user_id = ?
        GROUP BY p.id ORDER BY p.created_at DESC LIMIT 8`
     )
-    .all();
+    .all(userId);
   res.render('pages/dashboard', {
     title: 'Dashboard',
     stats,
@@ -62,8 +67,8 @@ router.get('/dashboard', (req, res) => {
 
 router.get('/compose', (req, res) => {
   const accounts = db
-    .prepare("SELECT * FROM accounts WHERE status = 'connected' ORDER BY platform")
-    .all();
+    .prepare("SELECT * FROM accounts WHERE status = 'connected' AND user_id = ? ORDER BY platform")
+    .all(currentUserId(res));
   res.render('pages/compose', {
     title: 'Compose',
     accounts,
@@ -84,6 +89,7 @@ router.get('/compose', (req, res) => {
 
 router.post('/compose', composeLimiter, upload.any(), async (req, res) => {
   const { text, topic, tone, length, publish_mode, scheduled_at } = req.body;
+  const userId = currentUserId(res);
   const accountIds = [].concat(req.body.platforms || []).filter(Boolean);
   const files = req.files || [];
   const unlinkAll = () => {
@@ -99,8 +105,10 @@ router.post('/compose', composeLimiter, upload.any(), async (req, res) => {
       return res.redirect('/compose?msg=no_platform');
     }
     const accounts = db
-      .prepare(`SELECT * FROM accounts WHERE id IN (${accountIds.map(() => '?').join(',')})`)
-      .all(...accountIds.map(Number));
+      .prepare(
+        `SELECT * FROM accounts WHERE user_id = ? AND id IN (${accountIds.map(() => '?').join(',')})`
+      )
+      .all(userId, ...accountIds.map(Number));
     if (accounts.length === 0) {
       unlinkAll();
       return res.redirect('/compose?msg=no_platform');
@@ -140,9 +148,10 @@ router.post('/compose', composeLimiter, upload.any(), async (req, res) => {
     }
     const info = db
       .prepare(
-        'INSERT INTO posts (text, media_path, media_type, media_name, status) VALUES (?, ?, ?, ?, ?)'
+        'INSERT INTO posts (user_id, text, media_path, media_type, media_name, status) VALUES (?, ?, ?, ?, ?, ?)'
       )
       .run(
+        userId,
         caption,
         sharedFile?.path || null,
         sharedFile ? mediaTypeFromMime(sharedFile.mimetype) : null,
@@ -158,8 +167,8 @@ router.post('/compose', composeLimiter, upload.any(), async (req, res) => {
     }
     const whenIso = when.toISOString();
     const insertTarget = db.prepare(
-      `INSERT INTO post_targets (post_id, account_id, platform, text, media_path, media_type, media_name, scheduled_at, next_attempt_at, extra)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO post_targets (user_id, post_id, account_id, platform, text, media_path, media_type, media_name, scheduled_at, next_attempt_at, extra)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
     const tx = db.transaction(() => {
       for (const t of targets) {
@@ -184,6 +193,7 @@ router.post('/compose', composeLimiter, upload.any(), async (req, res) => {
           });
         }
         insertTarget.run(
+          userId,
           postId,
           a.id,
           a.platform,
@@ -216,13 +226,15 @@ router.post('/compose', composeLimiter, upload.any(), async (req, res) => {
 });
 
 router.get('/posts', (req, res) => {
+  const userId = currentUserId(res);
   const posts = db
     .prepare(
       `SELECT p.*, GROUP_CONCAT(t.id) AS target_ids
        FROM posts p LEFT JOIN post_targets t ON t.post_id = p.id
+       WHERE p.user_id = ?
        GROUP BY p.id ORDER BY p.created_at DESC LIMIT 50`
     )
-    .all();
+    .all(userId);
   for (const p of posts) {
     p.mediaUrl = p.media_path ? `/media/${encodeURIComponent(path.basename(p.media_path))}` : null;
   }
@@ -232,9 +244,9 @@ router.get('/posts', (req, res) => {
       .prepare(
         `SELECT t.*, a.display_name AS account_name, a.platform AS account_platform
          FROM post_targets t JOIN accounts a ON a.id = t.account_id
-         WHERE t.post_id = ? ORDER BY t.id`
+         WHERE t.post_id = ? AND t.user_id = ? ORDER BY t.id`
       )
-      .all(p.id);
+      .all(p.id, userId);
     targetsByPost.set(p.id, targets);
   }
   for (const p of posts) {
@@ -255,11 +267,12 @@ router.get('/posts', (req, res) => {
 });
 
 router.post('/targets/:id/retry', retryLimiter, async (req, res) => {
-  const target = db.prepare('SELECT * FROM post_targets WHERE id = ?').get(req.params.id);
+  const userId = currentUserId(res);
+  const target = getOwnedTarget(req.params.id, userId);
   if (target) {
     db.prepare(
-      `UPDATE post_targets SET status = 'scheduled', attempts = 0, error = NULL, next_attempt_at = ? WHERE id = ?`
-    ).run(new Date().toISOString(), target.id);
+      `UPDATE post_targets SET status = 'scheduled', attempts = 0, error = NULL, next_attempt_at = ? WHERE id = ? AND user_id = ?`
+    ).run(new Date().toISOString(), target.id, userId);
   }
   await runOnce();
   res.redirect('/posts');

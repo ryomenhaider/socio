@@ -1,9 +1,9 @@
-const { rateLimit } = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
 const MINUTE = 60 * 1000;
 
 function userKey(req, res) {
-  return res.locals.user || req.ip;
+  return res.locals.user || ipKeyGenerator(req.ip);
 }
 
 function perUserLimiter(max, message) {

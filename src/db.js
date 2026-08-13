@@ -14,6 +14,7 @@ db.pragma('foreign_keys = ON');
 db.exec(`
 CREATE TABLE IF NOT EXISTS accounts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
   platform TEXT NOT NULL,
   display_name TEXT NOT NULL,
   token TEXT NOT NULL,
@@ -24,6 +25,7 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 CREATE TABLE IF NOT EXISTS posts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
   text TEXT NOT NULL DEFAULT '',
   media_path TEXT,
   media_type TEXT,
@@ -34,6 +36,7 @@ CREATE TABLE IF NOT EXISTS posts (
 
 CREATE TABLE IF NOT EXISTS post_targets (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
   post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
   account_id INTEGER NOT NULL REFERENCES accounts(id),
   platform TEXT NOT NULL,
@@ -75,6 +78,38 @@ for (const c of ['text', 'media_path', 'media_type', 'media_name', 'updated_at']
   if (!cols.some((x) => x.name === c)) {
     db.exec(`ALTER TABLE post_targets ADD COLUMN ${c} TEXT`);
   }
+}
+
+const userScopedTables = ['accounts', 'posts', 'post_targets'];
+for (const t of userScopedTables) {
+  const tCols = db.prepare(`PRAGMA table_info(${t})`).all();
+  if (!tCols.some((c) => c.name === 'user_id')) {
+    db.exec(`ALTER TABLE ${t} ADD COLUMN user_id INTEGER REFERENCES users(id)`);
+  }
+}
+const firstUser = db.prepare('SELECT id FROM users ORDER BY id LIMIT 1').get();
+if (firstUser) {
+  for (const t of userScopedTables) {
+    db.prepare(`UPDATE ${t} SET user_id = ? WHERE user_id IS NULL`).run(firstUser.id);
+  }
+} else {
+  const orphans = db
+    .prepare(
+      `SELECT (SELECT COUNT(*) FROM accounts WHERE user_id IS NULL) +
+              (SELECT COUNT(*) FROM posts WHERE user_id IS NULL) +
+              (SELECT COUNT(*) FROM post_targets WHERE user_id IS NULL) AS n`
+    )
+    .get().n;
+  if (orphans > 0) {
+    console.warn(
+      `[db] ${orphans} existing row(s) have no owner and no users exist yet — they are orphaned. ` +
+        'Add a user (npm run add-user) to claim them.'
+    );
+  }
+}
+
+for (const t of userScopedTables) {
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_${t}_user_id ON ${t} (user_id)`);
 }
 
 db.exec(
