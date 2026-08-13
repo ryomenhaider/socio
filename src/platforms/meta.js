@@ -60,7 +60,7 @@ async function graphGet(path, params) {
   }
   const data = await res.json().catch(() => ({}));
   if (data.error) {
-    throw new Error(`Meta error: ${data.error.message || JSON.stringify(data.error)}`);
+    throw new Error(formatMetaError(data.error));
   }
   return data;
 }
@@ -79,7 +79,7 @@ async function graphPost(path, params) {
   }
   const data = await res.json().catch(() => ({}));
   if (data.error) {
-    throw new Error(`Meta error: ${data.error.message || JSON.stringify(data.error)}`);
+    throw new Error(formatMetaError(data.error));
   }
   return data;
 }
@@ -263,9 +263,23 @@ async function createContainer(igId, params) {
   });
   const data = await res.json().catch(() => ({}));
   if (data.error) {
-    throw new Error(`Meta error: ${data.error.message || JSON.stringify(data.error)}`);
+    throw new Error(formatMetaError(data.error));
   }
   return data;
+}
+
+function formatMetaError(err) {
+  const parts = [err.message || 'unknown error'];
+  if (err.code) parts.push(`code ${err.code}`);
+  if (err.error_subcode) parts.push(`subcode ${err.error_subcode}`);
+  if (err.error_user_msg) parts.push(`— ${err.error_user_msg}`);
+  return `Meta error: ${parts.join(' · ')}`;
+}
+
+const IG_CAPTION_LIMIT = 2200;
+
+function trunkCaption(text) {
+  return (text || '').slice(0, IG_CAPTION_LIMIT);
 }
 
 async function publishContainer(igId, containerId, token) {
@@ -310,6 +324,12 @@ const instagram = definePlatform({
     if (!media) {
       throw new Error('Instagram requires an image or video — text-only posts are not supported.');
     }
+    if (media.type === 'image' && media.buffer.length > 8 * 1024 * 1024) {
+      throw new Error('Instagram images must be under 8 MB.');
+    }
+    if (media.type === 'video' && media.buffer.length > 100 * 1024 * 1024) {
+      throw new Error('Instagram videos must be under 100 MB.');
+    }
     if (media.type === 'image') {
       if (!isPublicUrl(config.baseUrl)) {
         throw new Error(
@@ -319,38 +339,58 @@ const instagram = definePlatform({
       const imageUrl = `${config.baseUrl}/media/${encodeURIComponent(media.name)}`;
       const container = await createContainer(igId, {
         image_url: imageUrl,
-        caption: post.text,
+        caption: trunkCaption(post.text),
         access_token: token,
       });
       const published = await publishContainer(igId, container.id, token);
       return { externalId: published.id || container.id };
     }
-    const container = await createContainer(igId, {
-      media_type: 'VIDEO',
-      upload_type: 'resumable',
-      caption: post.text,
-      access_token: token,
-    });
-    if (!container.uri) {
+    const caption = trunkCaption(post.text);
+    let container;
+    let uploadUri = null;
+    try {
+      container = await createContainer(igId, {
+        media_type: 'VIDEO',
+        upload_type: 'resumable',
+        share_to_feed: 'true',
+        caption,
+        access_token: token,
+      });
+      uploadUri = container.uri || null;
+    } catch (err) {
+      try {
+        container = await graphPostMultipart(
+          `${igId}/media`,
+          { media_type: 'VIDEO', share_to_feed: 'true', caption, access_token: token },
+          'video',
+          media
+        );
+      } catch (fallbackErr) {
+        throw err;
+      }
+    }
+    if (!container.id) {
       throw new Error(
-        `Instagram: resumable upload not available (${container.error?.message || 'no upload URI'}).`
+        `Instagram: no container id (${container.error?.message || JSON.stringify(container)})`
       );
     }
-    const up = await fetch(container.uri, {
-      method: 'POST',
-      signal: AbortSignal.timeout(10 * 60 * 1000),
-      headers: {
-        Authorization: `OAuth ${token}`,
-        offset: '0',
-        file_size: String(media.buffer.length),
-      },
-      body: media.buffer,
-    });
-    const upData = await up.json().catch(() => ({}));
-    if (!up.ok || !upData.success) {
-      throw new Error(
-        `Instagram upload failed: ${upData.debug_info?.message || JSON.stringify(upData)}`
-      );
+    if (uploadUri) {
+      const up = await fetch(uploadUri, {
+        method: 'POST',
+        signal: AbortSignal.timeout(10 * 60 * 1000),
+        headers: {
+          Authorization: `OAuth ${token}`,
+          offset: '0',
+          file_size: String(media.buffer.length),
+        },
+        body: media.buffer,
+      });
+      const upData = await up.json().catch(() => ({}));
+      if (!up.ok || !upData.success) {
+        throw new Error(
+          `Instagram upload failed: ${upData.debug_info?.message || JSON.stringify(upData)}`
+        );
+      }
     }
     await waitForContainer(container.id, token, 'video');
     const published = await publishContainer(igId, container.id, token);
