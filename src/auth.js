@@ -81,6 +81,19 @@ function requireAuth(req, res, next) {
   next();
 }
 
+function currentUserId(res) {
+  const row = db.prepare('SELECT id FROM users WHERE username = ?').get(res.locals.user);
+  return row ? row.id : null;
+}
+
+function getOwnedAccount(id, userId) {
+  return db.prepare('SELECT * FROM accounts WHERE id = ? AND user_id = ?').get(id, userId);
+}
+
+function getOwnedTarget(id, userId) {
+  return db.prepare('SELECT * FROM post_targets WHERE id = ? AND user_id = ?').get(id, userId);
+}
+
 module.exports = {
   SESSION_TTL_MS,
   hashPassword,
@@ -90,4 +103,7 @@ module.exports = {
   verifySession,
   parseCookies,
   requireAuth,
+  currentUserId,
+  getOwnedAccount,
+  getOwnedTarget,
 };

@@ -3,6 +3,7 @@ const { db } = require('../db');
 const { generateCopy } = require('../services/ai');
 const { fetchCreatorInfo } = require('../platforms/tiktok');
 const { perUserLimiter } = require('../rate-limit');
+const { currentUserId } = require('../auth');
 
 const router = express.Router();
 
@@ -48,7 +49,9 @@ router.post('/api/copy', copyLimiter, async (req, res) => {
 });
 
 router.get('/api/tiktok/options', async (req, res) => {
-  const account = db.prepare('SELECT * FROM accounts WHERE id = ?').get(req.query.account_id);
+  const account = db
+    .prepare('SELECT * FROM accounts WHERE id = ? AND user_id = ?')
+    .get(req.query.account_id, currentUserId(res));
   if (!account || account.platform !== 'tiktok') {
     return res.render('partials/tiktok_options', {
       ok: false,
