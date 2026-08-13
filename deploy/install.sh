@@ -10,7 +10,7 @@
 set -euo pipefail
 
 APP_DIR="${1:?usage: bash deploy/install.sh /home/ubuntu/socio [domain] [app-user]}"
-DOMAIN="${2:-vektorlabs.xyz}"
+DOMAIN="${2:-}"
 # WARNING: 'ubuntu' is the general-purpose SSH/admin login account, not a
 # dedicated service user. For production deployments create a system user and
 # pass it as the 3rd arg instead, e.g.:
